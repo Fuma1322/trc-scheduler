@@ -18,14 +18,16 @@ export default function RootLayout({
       <body className="bg-[#F7F8F5] text-[#17201C] antialiased">
         <Navbar />
 
-        <main className="min-h-screen pb-24 md:pb-0">
-          {children}
+        <main className="min-h-screen">
+            {children}
         </main>
 
-        <Footer />
+        <div className="pb-24 md:pb-0">
+            <Footer />
+        </div>
 
         <MobileDock />
-      </body>
+        </body>
     </html>
   );
 }
