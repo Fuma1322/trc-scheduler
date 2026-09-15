@@ -11,8 +11,8 @@ import {
 export default function MobileDock() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 md:hidden">
-      <nav className="mx-auto flex max-w-md items-center justify-between rounded-2xl border border-[#E5DED2] bg-[#FFFDF9]/95 px-3 py-2 shadow-[0_10px_40px_rgba(61,52,43,0.15)] backdrop-blur-xl">
-        
+    <nav className="mx-auto flex max-w-md items-center justify-between rounded-[22px] border border-[#E4E9E4] bg-white/95 px-2 py-2 shadow-[0_12px_40px_rgba(6,78,59,0.14)] backdrop-blur-xl">
+
         <Link
           href="/"
           className="flex min-w-[64px] flex-col items-center gap-1 rounded-xl px-3 py-2 text-[#3D342B]"
