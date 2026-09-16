@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: LayoutDashboard,
     },
     {
-      href: '/calendar',
+      href: '/dashboard/calendar',
       label: 'Calendar',
       icon: CalendarDays,
     },
