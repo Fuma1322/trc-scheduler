@@ -44,7 +44,7 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="/bookings"
+            href="/dashboard"
             className="rounded-full px-4 py-2 text-sm font-medium text-[#66736C] transition hover:bg-[#F0F5F1] hover:text-[#064E3B]"
           >
             Dashboard
