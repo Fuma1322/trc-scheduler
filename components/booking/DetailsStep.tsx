@@ -8,10 +8,7 @@ type Props = {
   whatsapp: string;
   notes: string;
 
-  onChange: (
-    field: 'fullName' | 'phone' | 'whatsapp' | 'notes',
-    value: string
-  ) => void;
+  onChange: (field: 'fullName' | 'phone' | 'whatsapp' | 'notes', value: string) => void;
 
   onBack: () => void;
   onSubmit: () => void;
@@ -26,10 +23,7 @@ export default function DetailsStep({
   onBack,
   onSubmit,
 }: Props) {
-  const valid =
-    fullName.trim() &&
-    phone.trim() &&
-    whatsapp.trim();
+  const valid = fullName.trim() && phone.trim() && whatsapp.trim();
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -43,51 +37,39 @@ export default function DetailsStep({
         </h1>
 
         <p className="mt-3 text-sm leading-6 text-[#66736C]">
-          We'll use these details to confirm your booking.
+          We&apos;ll use these details to confirm your booking.
         </p>
       </div>
 
       <div className="space-y-5 rounded-2xl border border-[#E4E9E4] bg-white p-6 sm:p-8">
         <div>
-          <label className="text-sm font-medium text-[#17201C]">
-            Full name
-          </label>
+          <label className="text-sm font-medium text-[#17201C]">Full name</label>
 
           <input
             value={fullName}
-            onChange={(e) =>
-              onChange('fullName', e.target.value)
-            }
+            onChange={(e) => onChange('fullName', e.target.value)}
             placeholder="Your full name"
             className="mt-2 w-full rounded-xl border border-[#DDE5DF] px-4 py-3 text-sm outline-none focus:border-[#047857] focus:ring-4 focus:ring-[#ECFDF5]"
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-[#17201C]">
-            Phone number
-          </label>
+          <label className="text-sm font-medium text-[#17201C]">Phone number</label>
 
           <input
             value={phone}
-            onChange={(e) =>
-              onChange('phone', e.target.value)
-            }
+            onChange={(e) => onChange('phone', e.target.value)}
             placeholder="+266 ..."
             className="mt-2 w-full rounded-xl border border-[#DDE5DF] px-4 py-3 text-sm outline-none focus:border-[#047857] focus:ring-4 focus:ring-[#ECFDF5]"
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-[#17201C]">
-            WhatsApp number
-          </label>
+          <label className="text-sm font-medium text-[#17201C]">WhatsApp number</label>
 
           <input
             value={whatsapp}
-            onChange={(e) =>
-              onChange('whatsapp', e.target.value)
-            }
+            onChange={(e) => onChange('whatsapp', e.target.value)}
             placeholder="+266 ..."
             className="mt-2 w-full rounded-xl border border-[#DDE5DF] px-4 py-3 text-sm outline-none focus:border-[#047857] focus:ring-4 focus:ring-[#ECFDF5]"
           />
@@ -96,16 +78,12 @@ export default function DetailsStep({
         <div>
           <label className="text-sm font-medium text-[#17201C]">
             Additional notes
-            <span className="ml-1 font-normal text-[#8A958F]">
-              (optional)
-            </span>
+            <span className="ml-1 font-normal text-[#8A958F]">(optional)</span>
           </label>
 
           <textarea
             value={notes}
-            onChange={(e) =>
-              onChange('notes', e.target.value)
-            }
+            onChange={(e) => onChange('notes', e.target.value)}
             rows={4}
             placeholder="Anything we should know about your event?"
             className="mt-2 w-full resize-none rounded-xl border border-[#DDE5DF] px-4 py-3 text-sm outline-none focus:border-[#047857] focus:ring-4 focus:ring-[#ECFDF5]"

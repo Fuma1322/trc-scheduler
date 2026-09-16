@@ -5,7 +5,6 @@ export default function BookingSuccess() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-5 py-16">
       <div className="w-full max-w-xl text-center">
-
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#ECFDF5] text-[#064E3B]">
           <Check size={30} strokeWidth={2} />
         </div>
@@ -19,51 +18,34 @@ export default function BookingSuccess() {
         </h1>
 
         <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-[#66736C]">
-          We've received your booking details. A confirmation
-          will be sent to your WhatsApp number.
+          We&apos;ve received your booking details. A confirmation will be sent to your WhatsApp
+          number.
         </p>
 
         <div className="mx-auto mt-8 max-w-md rounded-2xl border border-[#E4E9E4] bg-white p-6 text-left">
+          <p className="text-xs text-[#8A958F]">Booking reference</p>
 
-          <p className="text-xs text-[#8A958F]">
-            Booking reference
-          </p>
-
-          <p className="mt-1 text-lg font-semibold text-[#064E3B]">
-            TRC-2026-0148
-          </p>
+          <p className="mt-1 text-lg font-semibold text-[#064E3B]">TRC-2026-0148</p>
 
           <div className="my-5 border-t border-[#E4E9E4]" />
 
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-[#8A958F]">
-                Activity
-              </span>
+              <span className="text-[#8A958F]">Activity</span>
 
-              <span className="font-medium text-[#39443F]">
-                Wedding
-              </span>
+              <span className="font-medium text-[#39443F]">Wedding</span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-[#8A958F]">
-                Date
-              </span>
+              <span className="text-[#8A958F]">Date</span>
 
-              <span className="font-medium text-[#39443F]">
-                16 September 2026
-              </span>
+              <span className="font-medium text-[#39443F]">16 September 2026</span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-[#8A958F]">
-                Time
-              </span>
+              <span className="text-[#8A958F]">Time</span>
 
-              <span className="font-medium text-[#39443F]">
-                14:00 – 16:00
-              </span>
+              <span className="font-medium text-[#39443F]">14:00 – 16:00</span>
             </div>
           </div>
         </div>
