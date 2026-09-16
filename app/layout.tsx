@@ -13,7 +13,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: 'TRC-SCHEDULER',
-  description: 'Proudly By MPLUG PTY LTD',
+  description: 'Proudly Powered By MPLUG PTY LTD',
 };
 
 export default function RootLayout({
@@ -22,10 +22,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn( poppins.variable)}>
-      <body className="min-h-screen bg-white font-sans antialiased">
-         <Toaster position="top-right" richColors />
-          {children}
+    <html lang="en" suppressHydrationWarning className={cn(poppins.variable)}>
+      <body className="min-h-screen bg-white antialiased">
+        <Toaster position="top-right" richColors />
+        {children}
       </body>
     </html>
   );

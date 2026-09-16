@@ -1,10 +1,10 @@
-import BookingFlow from '@/components/booking/BookingFlow'
+import BookingSuccess from '@/components/booking/BookingSuccess'
 import React from 'react'
 
 export default function page() {
   return (
     <div>
-      <BookingFlow />
+      <BookingSuccess />
     </div>
   )
 }
