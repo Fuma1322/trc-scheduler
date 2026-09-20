@@ -36,7 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: Users2,
     },
     {
-      href: '/payments',
+      href: '/dashboard/payments',
       label: 'Payments',
       icon: CreditCard,
     },
