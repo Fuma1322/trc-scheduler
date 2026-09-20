@@ -27,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: CalendarDays,
     },
     {
-      href: '/bookings',
+      href: '/dashboard/bookings',
       label: 'Bookings',
       icon: ClipboardList,
     },
