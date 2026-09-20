@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Users2,
   CreditCard,
-  Settings,
   ChevronRight,
 } from 'lucide-react';
 
