@@ -41,11 +41,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       label: 'Payments',
       icon: CreditCard,
     },
-    {
-      href: '/settings',
-      label: 'Settings',
-      icon: Settings,
-    },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
