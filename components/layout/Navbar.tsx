@@ -1,7 +1,35 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { CalendarDays } from 'lucide-react';
 
 export default function Navbar() {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  const navLinks = [
+    {
+      href: '/',
+      label: 'Home',
+    },
+    {
+      href: '/calendar',
+      label: 'Calendar',
+    },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+    },
+  ];
+
   return (
     <header className="sticky top-0 z-50 border-b border-[#E4E9E4] bg-[#F7F8F5]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-5 sm:px-8">
@@ -22,26 +50,24 @@ export default function Navbar() {
 
         {/* Navigation */}
         <nav className="hidden items-center gap-1 rounded-full border border-[#E4E9E4] bg-white/70 p-1 md:flex">
-          <Link
-            href="/"
-            className="rounded-full bg-[#F0F5F1] px-4 py-2 text-sm font-medium text-[#064E3B]"
-          >
-            Home
-          </Link>
+          {navLinks.map((link) => {
+            const active = isActive(link.href);
 
-          <Link
-            href="/calendar"
-            className="rounded-full px-4 py-2 text-sm font-medium text-[#66736C] transition hover:bg-[#F0F5F1] hover:text-[#064E3B]"
-          >
-            Calendar
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="rounded-full px-4 py-2 text-sm font-medium text-[#66736C] transition hover:bg-[#F0F5F1] hover:text-[#064E3B]"
-          >
-            Dashboard
-          </Link>
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? 'page' : undefined}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                  active
+                    ? 'bg-[#ECFDF5] text-[#064E3B] shadow-sm'
+                    : 'text-[#66736C] hover:bg-[#F0F5F1] hover:text-[#064E3B]'
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </header>
