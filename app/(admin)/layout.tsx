@@ -32,7 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       icon: ClipboardList,
     },
     {
-      href: '/customers',
+      href: '/dashboard/customers',
       label: 'Customers',
       icon: Users2,
     },
