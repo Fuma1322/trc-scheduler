@@ -66,7 +66,7 @@ export default function DashboardPage() {
           </h1>
 
           <p className="mt-2 max-w-xl text-sm leading-6 text-[#7A8580]">
-            Here is what's happening with the TRC Hall today.
+            Here is what&apos;s happening with the TRC Hall today.
           </p>
         </div>
 
