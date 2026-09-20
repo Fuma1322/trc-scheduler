@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CalendarDays, Grid, Home } from 'lucide-react';
+import { CalendarDays, Grid, Home, LayoutDashboard } from 'lucide-react';
 
 const navItems = [
   {
@@ -18,7 +18,7 @@ const navItems = [
   {
     href: '/dashboard',
     label: 'Dashboard',
-    icon: Grid,
+    icon: LayoutDashboard,
   },
 ];
 
