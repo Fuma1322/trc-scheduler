@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={cn(poppins.variable)}>
-      <body className="min-h-screen bg-white antialiased">
+      <body className="min-h-screen bg-white font-sans antialiased">
         <Toaster position="top-right" richColors />
         {children}
       </body>

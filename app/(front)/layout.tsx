@@ -14,20 +14,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-[#F7F8F5] text-[#17201C] antialiased">
-        <Navbar />
+    <div className="bg-[#F7F8F5] text-[#17201C]">
+      <Navbar />
 
-        <main className="min-h-screen">
-            {children}
-        </main>
+      <main className="min-h-screen">{children}</main>
 
-        <div className="pb-24 md:pb-0">
-            <Footer />
-        </div>
+      <div className="pb-24 md:pb-0">
+        <Footer />
+      </div>
 
-        <MobileDock />
-        </body>
-    </html>
+      <MobileDock />
+    </div>
   );
 }
