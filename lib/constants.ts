@@ -1,9 +1,9 @@
 export const ACTIVITIES = [
   {
-    id: 'wedding',
-    name: 'Wedding',
-    description: 'Weddings and wedding receptions',
-    icon: 'Heart',
+    id: 'press-conference',
+    name: 'Press Conference',
+    description: 'Media events and press conferences',
+    icon: 'MicVocal',
   },
   {
     id: 'meeting',
@@ -37,13 +37,51 @@ export const ACTIVITIES = [
   },
 ] as const;
 
-export const TIME_SLOTS = [
-  '08:00 - 10:00',
-  '10:00 - 12:00',
-  '12:00 - 14:00',
-  '14:00 - 16:00',
-  '16:00 - 18:00',
-  '18:00 - 20:00',
+export const BOOKING_DURATIONS = [
+  {
+    id: 'full-day',
+    name: 'Full Day',
+    description: 'Book the hall for the entire day',
+  },
+  {
+    id: 'half-day',
+    name: 'Half Day',
+    description: 'Book the hall for a morning or afternoon session',
+  },
+  {
+    id: 'custom',
+    name: 'Custom Hours',
+    description: 'Choose your own start and end time',
+  },
+] as const;
+
+export const HALF_DAY_SLOTS = [
+  {
+    id: 'morning',
+    name: 'Morning',
+    time: '08:00 - 13:00',
+  },
+  {
+    id: 'afternoon',
+    name: 'Afternoon',
+    time: '13:00 - 18:00',
+  },
+] as const;
+
+export const BOOKING_HOURS = [
+  '08:00',
+  '09:00',
+  '10:00',
+  '11:00',
+  '12:00',
+  '13:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '17:00',
+  '18:00',
+  '19:00',
+  '20:00',
 ] as const;
 
 export const HALL_NAME = 'TRC Hall';

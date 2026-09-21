@@ -8,6 +8,7 @@ import {
   Sparkles,
   Users,
   ArrowRight,
+  MicVocal,
 } from 'lucide-react';
 
 import { ACTIVITIES } from '@/lib/constants';
@@ -19,6 +20,7 @@ const icons = {
   Flower2,
   Cake,
   Sparkles,
+  MicVocal,
 };
 
 type Props = {
@@ -27,11 +29,7 @@ type Props = {
   onContinue: () => void;
 };
 
-export default function ActivityStep({
-  selected,
-  onSelect,
-  onContinue,
-}: Props) {
+export default function ActivityStep({ selected, onSelect, onContinue }: Props) {
   return (
     <div>
       <div className="mb-8">
@@ -50,9 +48,7 @@ export default function ActivityStep({
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ACTIVITIES.map((activity) => {
-          const Icon = icons[
-            activity.icon as keyof typeof icons
-          ];
+          const Icon = icons[activity.icon as keyof typeof icons];
 
           const isSelected = selected === activity.id;
 
@@ -79,13 +75,9 @@ export default function ActivityStep({
                 <Icon size={20} strokeWidth={1.7} />
               </div>
 
-              <h2 className="font-semibold text-[#17201C]">
-                {activity.name}
-              </h2>
+              <h2 className="font-semibold text-[#17201C]">{activity.name}</h2>
 
-              <p className="mt-1 text-xs leading-5 text-[#7A857F]">
-                {activity.description}
-              </p>
+              <p className="mt-1 text-xs leading-5 text-[#7A857F]">{activity.description}</p>
             </button>
           );
         })}
