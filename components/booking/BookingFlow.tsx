@@ -7,8 +7,7 @@ import BookingProgress from './BookingProgress';
 import BookingSummary from './BookingSummary';
 import ActivityStep from './ActivityStep';
 import DateTimeStep from './DateTimeStep';
-import PaymentStep from './PaymentStep';
-import DetailsStep from './DetailsStep';
+import PaymentDetailsStep from './PaymentDetailsStep.tsx';
 
 import { initialBookingData, type BookingData, type BookingStep } from '@/lib/booking';
 
@@ -80,31 +79,12 @@ export default function BookingFlow() {
               />
             )}
 
-            {/* PAYMENT */}
+            {/* PAYMENT & DETAILS */}
             {step === 'payment' && (
-              <PaymentStep
-                paymentReference={booking.paymentReference}
-
-                onPaymentReferenceChange={(value) => updateBooking('paymentReference', value)}
-
-                onBack={() => setStep('datetime')}
-
-                onContinue={() => setStep('details')}
-              />
-            )}
-
-            {/* CUSTOMER DETAILS */}
-            {step === 'details' && (
-              <DetailsStep
-                fullName={booking.fullName}
-                phone={booking.phone}
-                whatsapp={booking.whatsapp}
-                notes={booking.notes}
-
+              <PaymentDetailsStep
+                booking={booking}
                 onChange={(field, value) => updateBooking(field, value)}
-
-                onBack={() => setStep('payment')}
-
+                onBack={() => setStep('datetime')}
                 onSubmit={submitBooking}
               />
             )}

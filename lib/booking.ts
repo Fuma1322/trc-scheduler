@@ -1,8 +1,10 @@
-export type BookingStep = 'activity' | 'datetime' | 'payment' | 'details';
+export type BookingStep = 'activity' | 'datetime' | 'payment';
 
 export type BookingDuration = 'full-day' | 'half-day' | 'custom';
 
 export type HalfDay = 'morning' | 'afternoon';
+
+export type PaymentMethod = 'mpesa' | 'bank-transfer' | 'cash';
 
 export type BookingData = {
   // Activity
@@ -22,6 +24,7 @@ export type BookingData = {
   endTime: string | null;
 
   // Payment
+  paymentMethod: PaymentMethod | null;
   paymentReference: string;
 
   // Customer details
@@ -47,6 +50,7 @@ export const initialBookingData: BookingData = {
   endTime: null,
 
   // Payment
+  paymentMethod: null,
   paymentReference: '',
 
   // Customer details
