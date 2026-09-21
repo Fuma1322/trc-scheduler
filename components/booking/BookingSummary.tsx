@@ -45,6 +45,8 @@ export default function BookingSummary({ booking }: Props) {
     return 'Custom Hours';
   };
 
+  const totalBookingFee = booking.dates.length * BOOKING_FEE;
+
   const getDateLabel = () => {
     if (booking.dates.length === 0) {
       return 'Not selected';
@@ -104,10 +106,25 @@ export default function BookingSummary({ booking }: Props) {
       </div>
 
       {/* PRICE */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-[#66736C]">Booking fee</span>
-
-        <span className="text-lg font-semibold text-[#17201C]">M{BOOKING_FEE}</span>
+      <div className="space-y-3">
+        {' '}
+        <div className="flex items-center justify-between">
+          {' '}
+          <span className="text-sm text-[#66736C]"> Booking fee </span>{' '}
+          <span className="text-sm font-medium text-[#39443F]">
+            {' '}
+            M{BOOKING_FEE} × {booking.dates.length || 0} day{' '}
+            {booking.dates.length === 1 ? '' : 's'}{' '}
+          </span>{' '}
+        </div>{' '}
+        <div className="flex items-center justify-between border-t border-[#E4E9E4] pt-3">
+          {' '}
+          <span className="text-sm font-semibold text-[#17201C]"> Total </span>{' '}
+          <span className="text-xl font-bold text-[#064E3B]">
+            {' '}
+            M{totalBookingFee.toLocaleString()}{' '}
+          </span>{' '}
+        </div>{' '}
       </div>
 
       {/* MULTI-DAY INDICATOR */}
