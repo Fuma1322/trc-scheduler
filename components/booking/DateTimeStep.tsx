@@ -71,7 +71,6 @@ export default function DateTimeStep({
 
     if (exists) {
       onDatesChange(selectedDates.filter((selected) => !isSameDay(selected, date)));
-
       return;
     }
 
@@ -108,7 +107,7 @@ export default function DateTimeStep({
 
       <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
         {/* LEFT */}
-        <div className="space-y-6">
+        <div>
           {/* CALENDAR */}
           <div className="rounded-2xl border border-[#E4E9E4] bg-white p-5 sm:p-7">
             <div className="mb-6 flex items-center justify-between">
@@ -186,45 +185,6 @@ export default function DateTimeStep({
                 </p>
               </div>
             )}
-          </div>
-
-          {/* DURATION */}
-          <div className="rounded-2xl border border-[#E4E9E4] bg-white p-5 sm:p-7">
-            <div className="mb-5">
-              <p className="text-xs text-[#7A857F]">Booking duration</p>
-
-              <h2 className="mt-1 font-semibold text-[#17201C]">How long do you need the hall?</h2>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {BOOKING_DURATIONS.map((duration) => {
-                const selected = durationType === duration.id;
-
-                return (
-                  <button
-                    key={duration.id}
-                    type="button"
-                    onClick={() => onDurationChange(duration.id)}
-                    className={[
-                      'rounded-xl border p-4 text-left transition',
-                      selected
-                        ? 'border-[#047857] bg-[#ECFDF5] text-[#064E3B]'
-                        : 'border-[#E4E9E4] hover:border-[#B7D8CA]',
-                    ].join(' ')}
-                  >
-                    <div className="flex items-start justify-between">
-                      <Clock3 size={18} />
-
-                      {selected && <Check size={16} />}
-                    </div>
-
-                    <p className="mt-4 text-sm font-semibold">{duration.name}</p>
-
-                    <p className="mt-1 text-xs leading-5 text-[#7A857F]">{duration.description}</p>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
 
@@ -328,45 +288,42 @@ export default function DateTimeStep({
             </div>
           )}
 
-          {/* SUMMARY */}
-          <div className="rounded-2xl bg-[#064E3B] p-5 text-white sm:p-7">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A7F3D0]">
-              Booking summary
-            </p>
+          {/* BOOKING DURATION */}
+          <div className="rounded-2xl border border-[#E4E9E4] bg-white p-5 sm:p-7">
+            <div className="mb-5">
+              <p className="text-xs text-[#7A857F]">Booking duration</p>
 
-            <div className="mt-5 space-y-4">
-              <div>
-                <p className="text-xs text-[#A7F3D0]">Dates</p>
+              <h2 className="mt-1 font-semibold text-[#17201C]">How long do you need the hall?</h2>
+            </div>
 
-                <p className="mt-1 text-sm font-medium">
-                  {selectedDates.length === 0
-                    ? 'No dates selected'
-                    : selectedDates
-                        .map((date) =>
-                          date.toLocaleDateString('en-US', {
-                            day: 'numeric',
-                            month: 'short',
-                          })
-                        )
-                        .join(', ')}
-                </p>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {BOOKING_DURATIONS.map((duration) => {
+                const selected = durationType === duration.id;
 
-              <div>
-                <p className="text-xs text-[#A7F3D0]">Duration</p>
+                return (
+                  <button
+                    key={duration.id}
+                    type="button"
+                    onClick={() => onDurationChange(duration.id)}
+                    className={[
+                      'rounded-xl border p-4 text-left transition',
+                      selected
+                        ? 'border-[#047857] bg-[#ECFDF5] text-[#064E3B]'
+                        : 'border-[#E4E9E4] hover:border-[#B7D8CA]',
+                    ].join(' ')}
+                  >
+                    <div className="flex items-start justify-between">
+                      <Clock3 size={18} />
 
-                <p className="mt-1 text-sm font-medium">
-                  {durationType === 'full-day' && 'Full Day'}
+                      {selected && <Check size={16} />}
+                    </div>
 
-                  {durationType === 'half-day' &&
-                    halfDay &&
-                    `${halfDay === 'morning' ? 'Morning' : 'Afternoon'} Half Day`}
+                    <p className="mt-4 text-sm font-semibold">{duration.name}</p>
 
-                  {durationType === 'custom' && startTime && endTime && `${startTime} — ${endTime}`}
-
-                  {!durationType && 'Not selected'}
-                </p>
-              </div>
+                    <p className="mt-1 text-xs leading-5 text-[#7A857F]">{duration.description}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
