@@ -1,8 +1,8 @@
 import { CalendarDays, Clock3 } from 'lucide-react';
 
-import { ACTIVITIES, BOOKING_FEE, HALF_DAY_SLOTS } from '@/lib/constants';
+import { ACTIVITIES, FULL_DAY_FEE, HALF_DAY_FEE, HALF_DAY_SLOTS } from '@/lib/constants';
 
-import type { BookingData } from '@/lib/booking';
+import { getBookingTotal, type BookingData } from '@/lib/booking';
 
 type Props = {
   booking: BookingData;
@@ -10,6 +10,7 @@ type Props = {
 
 export default function BookingSummary({ booking }: Props) {
   const activity = ACTIVITIES.find((item) => item.id === booking.activity);
+  const totalBookingFee = getBookingTotal(booking);
 
   const formatDate = (date: Date) =>
     date.toLocaleDateString('en-GB', {
@@ -44,8 +45,6 @@ export default function BookingSummary({ booking }: Props) {
 
     return 'Custom Hours';
   };
-
-  const totalBookingFee = booking.dates.length * BOOKING_FEE;
 
   const getDateLabel = () => {
     if (booking.dates.length === 0) {
@@ -107,24 +106,41 @@ export default function BookingSummary({ booking }: Props) {
 
       {/* PRICE */}
       <div className="space-y-3">
-        {' '}
-        <div className="flex items-center justify-between">
-          {' '}
-          <span className="text-sm text-[#66736C]"> Booking fee </span>{' '}
-          <span className="text-sm font-medium text-[#39443F]">
-            {' '}
-            M{BOOKING_FEE} × {booking.dates.length || 0} day{' '}
-            {booking.dates.length === 1 ? '' : 's'}{' '}
-          </span>{' '}
-        </div>{' '}
-        <div className="flex items-center justify-between border-t border-[#E4E9E4] pt-3">
-          {' '}
-          <span className="text-sm font-semibold text-[#17201C]"> Total </span>{' '}
-          <span className="text-xl font-bold text-[#064E3B]">
-            {' '}
-            M{totalBookingFee.toLocaleString()}{' '}
-          </span>{' '}
-        </div>{' '}
+        {booking.durationType === 'custom' ? (
+          <div className="rounded-xl bg-[#F7F8F5] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8A958F]">
+              Booking fee
+            </p>
+
+            <p className="mt-1 text-sm font-semibold text-[#17201C]">Price to be confirmed</p>
+
+            <p className="mt-1 text-xs leading-5 text-[#66736C]">
+              Custom-hour bookings are priced after reviewing your requested hours.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#66736C]">
+                {booking.durationType === 'half-day' ? 'Half day' : 'Full day'}
+              </span>
+
+              <span className="text-sm font-medium text-[#39443F]">
+                M{booking.durationType === 'half-day' ? HALF_DAY_FEE : FULL_DAY_FEE}
+                {' × '}
+                {booking.dates.length} {booking.dates.length === 1 ? 'day' : 'days'}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-[#E4E9E4] pt-3">
+              <span className="text-sm font-semibold text-[#17201C]">Total</span>
+
+              <span className="text-xl font-bold text-[#064E3B]">
+                M{totalBookingFee?.toLocaleString()}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* MULTI-DAY INDICATOR */}

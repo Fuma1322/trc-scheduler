@@ -3,9 +3,9 @@
 import { ArrowLeft, Check, Copy, CreditCard, Landmark, Banknote } from 'lucide-react';
 import { useState } from 'react';
 
-import { BOOKING_FEE, MPESA_MERCHANT_NUMBER } from '@/lib/constants';
+import { MPESA_MERCHANT_NUMBER } from '@/lib/constants';
 
-import type { BookingData, PaymentMethod } from '@/lib/booking';
+import { getBookingTotal, type BookingData, type PaymentMethod } from '@/lib/booking';
 
 type Props = {
   booking: BookingData;
@@ -45,16 +45,29 @@ const paymentMethods: {
 export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit }: Props) {
   const [copied, setCopied] = useState(false);
 
-  const totalBookingFee = booking.dates.length * BOOKING_FEE;
+  const totalBookingFee = getBookingTotal(booking);
 
   const paymentMethod = booking.paymentMethod;
+
+  const isCustomBooking = booking.durationType === 'custom';
+
+  /*
+   * For full-day and half-day bookings:
+   * payment reference is required for M-Pesa and Bank Transfer.
+   *
+   * For custom-hour bookings:
+   * the price has not been determined yet, so we do NOT
+   * require a payment reference at this stage.
+   */
+  const paymentReferenceValid =
+    isCustomBooking || paymentMethod === 'cash' || Boolean(booking.paymentReference.trim());
 
   const valid =
     Boolean(paymentMethod) &&
     Boolean(booking.fullName.trim()) &&
     Boolean(booking.phone.trim()) &&
     Boolean(booking.whatsapp.trim()) &&
-    (paymentMethod === 'cash' || Boolean(booking.paymentReference.trim()));
+    paymentReferenceValid;
 
   async function copyMerchant() {
     await navigator.clipboard.writeText(MPESA_MERCHANT_NUMBER);
@@ -64,6 +77,33 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
     setTimeout(() => {
       setCopied(false);
     }, 2000);
+  }
+
+  function renderAmount() {
+    if (isCustomBooking || totalBookingFee === null) {
+      return (
+        <div>
+          <p className="text-xs text-[#66736C]">Booking fee</p>
+
+          <p className="mt-1 text-xl font-bold text-[#064E3B]">To be confirmed</p>
+
+          <p className="mt-2 text-xs leading-5 text-[#66736C]">
+            Your requested hours will be reviewed by TRC and the final booking fee will be
+            communicated before payment is completed.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <p className="text-xs text-[#66736C]">Amount to pay</p>
+
+        <p className="mt-1 text-2xl font-bold text-[#17201C]">
+          M{totalBookingFee.toLocaleString()}
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -79,7 +119,8 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
         </h1>
 
         <p className="mt-3 text-sm leading-6 text-[#66736C]">
-          Choose your payment method and provide the details we need to confirm your booking.
+          Choose your preferred payment method and provide the details we need to confirm your
+          booking.
         </p>
       </div>
 
@@ -141,16 +182,21 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
       {/* PAYMENT INSTRUCTIONS */}
       {paymentMethod && (
         <section className="mt-6 rounded-2xl border border-[#E4E9E4] bg-white p-6 sm:p-8">
+          {/* M-PESA */}
           {paymentMethod === 'mpesa' && (
             <>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#047857]">
                 M-Pesa payment
               </p>
 
-              <h2 className="mt-2 text-lg font-semibold text-[#17201C]">Complete your payment</h2>
+              <h2 className="mt-2 text-lg font-semibold text-[#17201C]">
+                {isCustomBooking ? 'M-Pesa payment method selected' : 'Complete your payment'}
+              </h2>
 
               <p className="mt-1 text-sm leading-6 text-[#66736C]">
-                Send your booking payment to the M-Pesa merchant number below.
+                {isCustomBooking
+                  ? 'You have selected M-Pesa. TRC will confirm the price for your custom-hour booking before payment is completed.'
+                  : 'Send your booking payment to the M-Pesa merchant number below.'}
               </p>
 
               <div className="mt-6 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] p-5">
@@ -182,34 +228,38 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
                   </button>
                 </div>
 
-                <div className="mt-5 border-t border-[#D1E8DD] pt-5">
-                  <p className="text-xs text-[#66736C]">Amount to pay</p>
+                <div className="mt-5 border-t border-[#D1E8DD] pt-5">{renderAmount()}</div>
+              </div>
 
-                  <p className="mt-1 text-2xl font-bold text-[#17201C]">
-                    M{totalBookingFee.toLocaleString()}
+              {!isCustomBooking && (
+                <div className="mt-6">
+                  <label className="text-sm font-medium text-[#17201C]">
+                    M-Pesa payment reference
+                  </label>
+
+                  <input
+                    value={booking.paymentReference}
+                    onChange={(e) => onChange('paymentReference', e.target.value)}
+                    placeholder="Enter your M-Pesa reference"
+                    className="mt-2 w-full rounded-xl border border-[#DDE5DF] bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#A0AAA5] focus:border-[#047857] focus:ring-4 focus:ring-[#ECFDF5]"
+                  />
+
+                  <p className="mt-2 text-xs text-[#8A958F]">
+                    Keep your M-Pesa confirmation message for verification.
                   </p>
                 </div>
-              </div>
+              )}
 
-              <div className="mt-6">
-                <label className="text-sm font-medium text-[#17201C]">
-                  M-Pesa payment reference
-                </label>
-
-                <input
-                  value={booking.paymentReference}
-                  onChange={(e) => onChange('paymentReference', e.target.value)}
-                  placeholder="Enter your M-Pesa reference"
-                  className="mt-2 w-full rounded-xl border border-[#DDE5DF] bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#A0AAA5] focus:border-[#047857] focus:ring-4 focus:ring-[#ECFDF5]"
-                />
-
-                <p className="mt-2 text-xs text-[#8A958F]">
-                  Keep your M-Pesa confirmation message for verification.
-                </p>
-              </div>
+              {isCustomBooking && (
+                <div className="mt-6 rounded-xl bg-[#F0F5F1] p-4 text-sm leading-6 text-[#66736C]">
+                  No payment reference is required yet. TRC will first confirm the price for your
+                  requested hours.
+                </div>
+              )}
             </>
           )}
 
+          {/* BANK TRANSFER */}
           {paymentMethod === 'bank-transfer' && (
             <>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#047857]">
@@ -217,54 +267,64 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
               </p>
 
               <h2 className="mt-2 text-lg font-semibold text-[#17201C]">
-                Complete your bank transfer
+                {isCustomBooking ? 'Bank transfer selected' : 'Complete your bank transfer'}
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-[#66736C]">
-                Transfer the booking amount using the TRC bank details below.
+                {isCustomBooking
+                  ? 'TRC will confirm the price for your custom-hour booking before you make payment.'
+                  : 'Transfer the booking amount using the TRC bank details below.'}
               </p>
 
               <div className="mt-6 rounded-xl bg-[#F7F8F5] p-5">
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs text-[#8A958F]">Bank</p>
+
                     <p className="mt-1 text-sm font-semibold text-[#17201C]">TRC Bank</p>
                   </div>
 
                   <div>
                     <p className="text-xs text-[#8A958F]">Account holder</p>
+
                     <p className="mt-1 text-sm font-semibold text-[#17201C]">TRC Hall</p>
                   </div>
 
                   <div>
                     <p className="text-xs text-[#8A958F]">Account number</p>
+
                     <p className="mt-1 text-sm font-semibold text-[#17201C]">
                       Bank details to be provided
                     </p>
                   </div>
 
-                  <div className="border-t border-[#E4E9E4] pt-4">
-                    <p className="text-xs text-[#8A958F]">Amount to pay</p>
-                    <p className="mt-1 text-2xl font-bold text-[#064E3B]">
-                      M{totalBookingFee.toLocaleString()}
-                    </p>
-                  </div>
+                  <div className="border-t border-[#E4E9E4] pt-4">{renderAmount()}</div>
                 </div>
               </div>
 
-              <div className="mt-6">
-                <label className="text-sm font-medium text-[#17201C]">Payment reference</label>
+              {!isCustomBooking && (
+                <div className="mt-6">
+                  <label className="text-sm font-medium text-[#17201C]">Payment reference</label>
 
-                <input
-                  value={booking.paymentReference}
-                  onChange={(e) => onChange('paymentReference', e.target.value)}
-                  placeholder="Enter your transfer reference"
-                  className="mt-2 w-full rounded-xl border border-[#DDE5DF] bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#A0AAA5] focus:border-[#047857] focus:ring-4 focus:ring-[#ECFDF5]"
-                />
-              </div>
+                  <input
+                    value={booking.paymentReference}
+                    onChange={(e) => onChange('paymentReference', e.target.value)}
+                    placeholder="Enter your transfer reference"
+                    className="mt-2 w-full rounded-xl border border-[#DDE5DF] bg-white px-4 py-3 text-sm outline-none transition placeholder:text-[#A0AAA5] focus:border-[#047857] focus:ring-4 focus:ring-[#ECFDF5]"
+                  />
+                </div>
+              )}
+
+              {isCustomBooking && (
+                <div className="mt-6 rounded-xl bg-[#F0F5F1] p-4 text-sm leading-6 text-[#66736C]">
+                  No payment reference is required yet. The final price and payment instructions
+                  will be communicated by TRC.
+                </div>
+              )}
             </>
           )}
 
+          {/* CASH */}
           {paymentMethod === 'cash' && (
             <>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#047857]">
@@ -278,14 +338,12 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
               </p>
 
               <div className="mt-6 rounded-xl bg-[#ECFDF5] p-5">
-                <p className="text-xs text-[#047857]">Amount to pay</p>
-
-                <p className="mt-1 text-2xl font-bold text-[#064E3B]">
-                  M{totalBookingFee.toLocaleString()}
-                </p>
+                {renderAmount()}
 
                 <p className="mt-3 text-sm leading-6 text-[#66736C]">
-                  Your booking will remain pending until the payment has been received and verified.
+                  {isCustomBooking
+                    ? 'Your requested hours will be reviewed first. TRC will communicate the final amount before payment is made.'
+                    : 'Your booking will remain pending until the payment has been received and verified.'}
                 </p>
               </div>
             </>
@@ -365,8 +423,9 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
       {/* CONFIRMATION NOTICE */}
       {paymentMethod && (
         <div className="mt-5 rounded-xl bg-[#F0F5F1] p-4 text-sm leading-6 text-[#66736C]">
-          Your booking confirmation will be sent to you via WhatsApp after your payment has been
-          verified.
+          {isCustomBooking
+            ? 'Your booking request will be reviewed by TRC. The final price and payment instructions will be communicated to you before payment is required.'
+            : 'Your booking confirmation will be sent to you via WhatsApp after your payment has been verified.'}
         </div>
       )}
 

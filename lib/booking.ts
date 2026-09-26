@@ -1,3 +1,5 @@
+import { FULL_DAY_FEE, HALF_DAY_FEE } from './constants';
+
 export type BookingStep = 'activity' | 'datetime' | 'payment';
 
 export type BookingDuration = 'full-day' | 'half-day' | 'custom';
@@ -59,3 +61,27 @@ export const initialBookingData: BookingData = {
   whatsapp: '',
   notes: '',
 };
+
+export function getBookingTotal(booking: BookingData): number | null {
+  const numberOfDates = booking.dates.length;
+
+  if (numberOfDates === 0) {
+    return 0;
+  }
+
+  if (booking.durationType === 'full-day') {
+    return numberOfDates * FULL_DAY_FEE;
+  }
+
+  if (booking.durationType === 'half-day') {
+    return numberOfDates * HALF_DAY_FEE;
+  }
+
+  // Custom hours have no fixed price.
+  // The price will be communicated during confirmation.
+  if (booking.durationType === 'custom') {
+    return null;
+  }
+
+  return 0;
+}

@@ -7,7 +7,7 @@ import BookingProgress from './BookingProgress';
 import BookingSummary from './BookingSummary';
 import ActivityStep from './ActivityStep';
 import DateTimeStep from './DateTimeStep';
-import PaymentDetailsStep from './PaymentDetailsStep.tsx';
+import PaymentDetailsStep from './PaymentDetailsStep';
 
 import { initialBookingData, type BookingData, type BookingStep } from '@/lib/booking';
 
