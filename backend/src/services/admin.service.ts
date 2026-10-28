@@ -123,27 +123,120 @@ export async function listBookings(status?: string) {
   return records.map(toBooking);
 }
 
+
 export async function updateBookingStatus(id: string, status: string) {
   const allowed = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'];
 
   if (!ObjectId.isValid(id)) {
     throw new Error('Invalid booking ID.');
   }
+
   if (!allowed.includes(status)) {
     throw new Error('Invalid booking status.');
   }
 
-  const result = await bookings().updateOne(
-    { _id: new ObjectId(id) },
-    { $set: { status, updatedAt: new Date() } },
-  );
+  const db = getDatabase();
+  const bookingCollection = db.collection<BookingRecord>('bookings');
+  const slots = db.collection<{
+    date: string;
+    hour: number;
+    bookingId: string;
+    reference: string;
+  }>('booking_slots');
 
-  if (!result.matchedCount) {
-    throw new Error('Booking not found.');
+  const bookingId = new ObjectId(id);
+  const session = db.client.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      const booking = await bookingCollection.findOne(
+        { _id: bookingId },
+        { session },
+      );
+
+      if (!booking) {
+        throw new Error('Booking not found.');
+      }
+
+      const inactiveStatuses = ['REJECTED', 'CANCELLED'];
+      const wasInactive = inactiveStatuses.includes(booking.status ?? '');
+      const willBeInactive = inactiveStatuses.includes(status);
+
+      if (willBeInactive) {
+        await slots.deleteMany({ bookingId: id }, { session });
+      } else if (wasInactive) {
+        const start = Number(booking.startTime?.slice(0, 2));
+        const end = Number(booking.endTime?.slice(0, 2));
+
+        if (
+          !booking.reference ||
+          !Array.isArray(booking.dates) ||
+          booking.dates.length === 0 ||
+          booking.dates.some((date) => !date) ||
+          !Number.isInteger(start) ||
+          !Number.isInteger(end) ||
+          start < 8 ||
+          end > 20 ||
+          end <= start
+        ) {
+          throw new Error(
+            'Booking time details are invalid; cannot restore this booking.',
+          );
+        }
+
+        const reservations = booking.dates.flatMap((date) =>
+          Array.from({ length: end - start }, (_, index) => ({
+            date,
+            hour: start + index,
+            bookingId: id,
+            reference: booking.reference!,
+          })),
+        );
+
+        await slots.insertMany(reservations, {
+          ordered: true,
+          session,
+        });
+      }
+
+      // Compare the status we read to avoid overwriting a concurrent change.
+      const statusFilter = booking.status === undefined
+        ? { status: { $exists: false } }
+        : { status: booking.status };
+
+      const result = await bookingCollection.updateOne(
+        { _id: bookingId, ...statusFilter },
+        { $set: { status, updatedAt: new Date() } },
+        { session },
+      );
+
+      if (result.matchedCount !== 1) {
+        throw new Error(
+          'Booking status changed concurrently. Refresh and try again.',
+        );
+      }
+    });
+
+    return { id, status };
+  } catch (error) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code === 11000
+    ) {
+      throw new Error(
+        'One or more time slots are no longer available. The booking status was not changed.',
+      );
+    }
+
+    throw error;
+  } finally {
+    await session.endSession();
   }
-
-  return { id, status };
 }
+
+
 
 export async function listPayments(status?: string) {
   const filter = status && status !== 'ALL'

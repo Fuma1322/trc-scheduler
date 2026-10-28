@@ -251,3 +251,84 @@ export async function createBooking(input: BookingInput) {
     throw error;
   }
 }
+export async function listAvailability(start: string, end: string) {
+  const isValidDate = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+    const parsed = new Date(`${value}T12:00:00`);
+
+    return (
+      !Number.isNaN(parsed.getTime()) &&
+      parsed.toISOString().slice(0, 10) === value
+    );
+  };
+
+  if (
+    !isValidDate(start) ||
+    !isValidDate(end) ||
+    start > end
+  ) {
+    throw new Error('Provide a valid availability start and end date.');
+  }
+
+  const startDate = new Date(`${start}T12:00:00Z`);
+  const endDate = new Date(`${end}T12:00:00Z`);
+  const days = Math.round(
+    (endDate.getTime() - startDate.getTime()) / 86_400_000,
+  ) + 1;
+
+  if (days > 42) {
+    throw new Error('Request availability for no more than 42 days.');
+  }
+
+  const { slots } = collections();
+
+  await ensureIndexes();
+
+  const reservations = await slots
+    .find({
+      date: { $gte: start, $lte: end },
+      hour: { $gte: 8, $lt: 20 },
+    })
+    .project({ _id: 0, date: 1, hour: 1 })
+    .toArray();
+
+  const bookedByDate = new Map<string, Set<number>>();
+
+  for (const reservation of reservations) {
+    const hours = bookedByDate.get(reservation.date) ?? new Set<number>();
+    hours.add(reservation.hour);
+    bookedByDate.set(reservation.date, hours);
+  }
+
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(startDate.getTime() + index * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+
+    const booked = bookedByDate.get(date) ?? new Set<number>();
+
+    const availableSlots = Array.from({ length: 12 }, (_, hourIndex) => {
+      const hour = hourIndex + 8;
+
+      return {
+        time: `${String(hour).padStart(2, '0')}:00`,
+        status: booked.has(hour) ? 'booked' as const : 'available' as const,
+      };
+    });
+
+    const availableCount = availableSlots.filter(
+      (slot) => slot.status === 'available',
+    ).length;
+
+    return {
+      date,
+      status: availableCount === 0
+        ? 'full' as const
+        : availableCount === 12
+          ? 'available' as const
+          : 'limited' as const,
+      slots: availableSlots,
+    };
+  });
+}
