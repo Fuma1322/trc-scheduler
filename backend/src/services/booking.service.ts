@@ -188,15 +188,24 @@ function validateInput(input: BookingInput): void {
   }
 }
 
+
 export async function createBooking(input: BookingInput) {
   validateInput(input);
   const [start, end] = getTimeRange(input);
+  const db = getDatabase();
   const { bookings, slots } = collections();
+
   await ensureIndexes();
 
   const bookingId = new ObjectId().toHexString();
   const reference = `TRC-${randomBytes(4).toString('hex').toUpperCase()}`;
-  const reservations = makeSlots(input.dates, start, end, bookingId, reference);
+  const reservations = makeSlots(
+    input.dates,
+    start,
+    end,
+    bookingId,
+    reference,
+  );
 
   const booking = {
     _id: new ObjectId(bookingId),
@@ -219,11 +228,19 @@ export async function createBooking(input: BookingInput) {
     createdAt: new Date(),
   };
 
+  const session = db.client.startSession();
+
   try {
-    // The unique (date, hour) index is the final protection against
-    // two simultaneous requests reserving the same time slot.
-    await slots.insertMany(reservations, { ordered: true });
-    await bookings.insertOne(booking);
+    await session.withTransaction(async () => {
+      // The unique (date, hour) index prevents conflicting reservations.
+      // Both writes participate in the same transaction.
+      await slots.insertMany(reservations, {
+        ordered: true,
+        session,
+      });
+
+      await bookings.insertOne(booking, { session });
+    });
 
     return {
       id: bookingId,
@@ -236,21 +253,23 @@ export async function createBooking(input: BookingInput) {
       paymentStatus: booking.paymentStatus,
     };
   } catch (error) {
-    // Release any slots reserved by this request if creation fails.
-    await slots.deleteMany({ bookingId }).catch(() => undefined);
-
     if (
       error &&
       typeof error === 'object' &&
       'code' in error &&
       error.code === 11000
     ) {
-      throw new Error('One or more selected time slots have just been booked. Please choose another time.');
+      throw new Error(
+        'One or more selected time slots have just been booked. Please choose another time.',
+      );
     }
 
     throw error;
+  } finally {
+    await session.endSession();
   }
 }
+
 export async function listAvailability(start: string, end: string) {
   const isValidDate = (value: string) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;

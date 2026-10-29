@@ -238,65 +238,7 @@ export async function updateBookingStatus(id: string, status: string) {
 
 
 
-export async function listPayments(status?: string) {
-  const filter = status && status !== 'ALL'
-    ? { paymentStatus: status }
-    : {};
 
-  const records = await bookings()
-    .find(filter)
-    .sort({ createdAt: -1 })
-    .limit(500)
-    .toArray();
-
-  return records.map((record) => {
-    const booking = toBooking(record);
-
-    return {
-      ...booking,
-      bookingReference: booking.reference,
-      customerPhone: booking.phone,
-      submittedAt: booking.createdAt,
-      verifiedAt: booking.verifiedAt || null,
-      status: booking.paymentStatus,
-      verifiedBy: booking.verifiedBy,
-    };
-  });
-}
-
-export async function updatePaymentStatus(
-  id: string,
-  status: string,
-  adminEmail: string,
-) {
-  const allowed = ['PENDING', 'PAID', 'REJECTED', 'REFUNDED'];
-
-  if (!ObjectId.isValid(id)) {
-    throw new Error('Invalid booking ID.');
-  }
-  if (!allowed.includes(status)) {
-    throw new Error('Invalid payment status.');
-  }
-
-  const verified = status === 'PAID' || status === 'REJECTED';
-  const result = await bookings().updateOne(
-    { _id: new ObjectId(id) },
-    {
-      $set: {
-        paymentStatus: status,
-        paymentVerifiedAt: verified ? new Date() : null,
-        paymentVerifiedBy: verified ? adminEmail : null,
-        updatedAt: new Date(),
-      },
-    },
-  );
-
-  if (!result.matchedCount) {
-    throw new Error('Booking not found.');
-  }
-
-  return { id, paymentStatus: status };
-}
 
 export async function listCustomers() {
   const records = await bookings()
