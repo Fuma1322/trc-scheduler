@@ -20,14 +20,14 @@ function formatDate(date: string) {
 function StatusBadge({ status }: { status: Booking['status'] }) {
   const styles = {
     PENDING: 'bg-[#FFF7E8] text-[#B45309]',
-    PAID: 'bg-[#ECFDF5] text-[#047857]',
+    APPROVED: 'bg-[#ECFDF5] text-[#047857]',
     REJECTED: 'bg-[#FEF2F2] text-[#B91C1C]',
     CANCELLED: 'bg-[#F3F4F3] text-[#69736E]',
   };
 
   const labels = {
     PENDING: 'Pending',
-    PAID: 'Paid',
+    APPROVED: 'Approved',
     REJECTED: 'Rejected',
     CANCELLED: 'Cancelled',
   };

@@ -29,8 +29,8 @@ const statusStyles: Record<BookingStatus, { label: string; className: string }> 
     label: 'Pending',
     className: 'bg-[#FFF7E8] text-[#B45309]',
   },
-  PAID: {
-    label: 'Paid',
+  APPROVED: {
+    label: 'Approved',
     className: 'bg-[#ECFDF5] text-[#047857]',
   },
   REJECTED: {
@@ -89,8 +89,8 @@ export default function BookingDetailsModal({ booking, onClose, onUpdateStatus }
     }
   };
 
-  const handleMarkPaid = () => {
-    onUpdateStatus(booking.id, 'PAID');
+  const handleApproveBooking = () => {
+    onUpdateStatus(booking.id, 'APPROVED');
   };
 
   const handleReject = () => {
@@ -132,7 +132,7 @@ export default function BookingDetailsModal({ booking, onClose, onUpdateStatus }
                 {status.label}
               </span>
 
-              {booking.status === 'PAID' && (
+              {booking.status === 'APPROVED' && (
                 <span className="flex items-center gap-1 text-xs text-[#047857]">
                   <Check size={14} strokeWidth={2.2} />
                   Confirmed
@@ -246,8 +246,7 @@ export default function BookingDetailsModal({ booking, onClose, onUpdateStatus }
 
               <div className="mt-4 rounded-xl bg-[#F7F8F5] px-4 py-3">
                 <p className="text-xs leading-5 text-[#66736C]">
-                  Verify the M-Pesa payment against the submitted reference before marking this
-                  booking as paid.
+                  Payment verification is managed separately on the Payments page.
                 </p>
               </div>
             </div>
@@ -291,14 +290,14 @@ export default function BookingDetailsModal({ booking, onClose, onUpdateStatus }
 
               <button
                 type="button"
-                onClick={handleMarkPaid}
+                onClick={handleApproveBooking}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#047857] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#064E3B]"
               >
                 <Check size={17} strokeWidth={2} />
-                Verify & Mark Paid
+                Approve Booking
               </button>
             </div>
-          ) : booking.status === 'PAID' ? (
+          ) : booking.status === 'APPROVED' ? (
             <div className="flex items-center justify-between gap-4 rounded-xl bg-[#ECFDF5] px-4 py-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D1FAE5] text-[#047857]">

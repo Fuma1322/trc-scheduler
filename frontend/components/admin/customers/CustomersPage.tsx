@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import CustomerFilters from './CustomerFilters';
 import CustomerTable from './CustomerTable';
@@ -13,7 +14,7 @@ export type CustomerBooking = {
   date: string;
   time: string;
   amount: number;
-  status: 'PENDING' | 'PAID' | 'REJECTED' | 'CANCELLED';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 };
 
 export type Customer = {
@@ -29,199 +30,137 @@ export type Customer = {
   bookings: CustomerBooking[];
 };
 
-const initialCustomers: Customer[] = [
-  {
-    id: 'cus-001',
-    name: 'Mpho Mokoena',
-    phone: '+266 5912 3456',
-    whatsapp: '+266 5912 3456',
-    email: 'mpho@example.com',
-    totalBookings: 3,
-    totalSpent: 10500,
-    lastBooking: '2026-09-24',
-    createdAt: '2026-04-12',
-    bookings: [
-      {
-        id: 'b-001',
-        reference: 'TRC-2026-0148',
-        purpose: 'Wedding',
-        date: '2026-09-24',
-        time: '10:00 - 16:00',
-        amount: 5000,
-        status: 'PAID',
-      },
-      {
-        id: 'b-002',
-        reference: 'TRC-2026-0091',
-        purpose: 'Meeting',
-        date: '2026-07-18',
-        time: '10:00 - 12:00',
-        amount: 1500,
-        status: 'PAID',
-      },
-      {
-        id: 'b-003',
-        reference: 'TRC-2026-0064',
-        purpose: 'Workshop',
-        date: '2026-06-09',
-        time: '08:00 - 12:00',
-        amount: 4000,
-        status: 'PAID',
-      },
-    ],
-  },
-  {
-    id: 'cus-002',
-    name: 'Thabiso Molapo',
-    phone: '+266 6334 7821',
-    whatsapp: '+266 6334 7821',
-    email: 'thabiso@example.com',
-    totalBookings: 2,
-    totalSpent: 5500,
-    lastBooking: '2026-09-26',
-    createdAt: '2026-05-21',
-    bookings: [
-      {
-        id: 'b-004',
-        reference: 'TRC-2026-0149',
-        purpose: 'Workshop',
-        date: '2026-09-26',
-        time: '08:00 - 13:00',
-        amount: 2500,
-        status: 'PAID',
-      },
-      {
-        id: 'b-005',
-        reference: 'TRC-2026-0103',
-        purpose: 'Meeting',
-        date: '2026-08-02',
-        time: '09:00 - 12:00',
-        amount: 3000,
-        status: 'PAID',
-      },
-    ],
-  },
-  {
-    id: 'cus-003',
-    name: 'Lerato Nthunya',
-    phone: '+266 5891 2345',
-    whatsapp: '+266 5891 2345',
-    email: 'lerato@example.com',
-    totalBookings: 1,
-    totalSpent: 0,
-    lastBooking: '2026-09-27',
-    createdAt: '2026-09-10',
-    bookings: [
-      {
-        id: 'b-006',
-        reference: 'TRC-2026-0150',
-        purpose: 'Birthday',
-        date: '2026-09-27',
-        time: '14:00 - 18:00',
-        amount: 3000,
-        status: 'PENDING',
-      },
-    ],
-  },
-  {
-    id: 'cus-004',
-    name: 'Kabelo Phiri',
-    phone: '+266 6212 9981',
-    whatsapp: '+266 6212 9981',
-    email: 'kabelo@example.com',
-    totalBookings: 1,
-    totalSpent: 0,
-    lastBooking: '2026-09-29',
-    createdAt: '2026-09-14',
-    bookings: [
-      {
-        id: 'b-007',
-        reference: 'TRC-2026-0151',
-        purpose: 'Meeting',
-        date: '2026-09-29',
-        time: '09:00 - 12:00',
-        amount: 1500,
-        status: 'PENDING',
-      },
-    ],
-  },
-  {
-    id: 'cus-005',
-    name: 'Masechaba Raleche',
-    phone: '+266 5845 2217',
-    whatsapp: '+266 5845 2217',
-    email: 'masechaba@example.com',
-    totalBookings: 1,
-    totalSpent: 0,
-    lastBooking: '2026-09-30',
-    createdAt: '2026-09-15',
-    bookings: [
-      {
-        id: 'b-008',
-        reference: 'TRC-2026-0152',
-        purpose: 'Funeral',
-        date: '2026-09-30',
-        time: '08:00 - 14:00',
-        amount: 4000,
-        status: 'REJECTED',
-      },
-    ],
-  },
-  {
-    id: 'cus-006',
-    name: 'Neo Matete',
-    phone: '+266 5978 4412',
-    whatsapp: '+266 5978 4412',
-    email: 'neo@example.com',
-    totalBookings: 1,
-    totalSpent: 0,
-    lastBooking: '2026-10-02',
-    createdAt: '2026-09-18',
-    bookings: [
-      {
-        id: 'b-009',
-        reference: 'TRC-2026-0153',
-        purpose: 'Workshop',
-        date: '2026-10-02',
-        time: '10:00 - 15:00',
-        amount: 2500,
-        status: 'PENDING',
-      },
-    ],
-  },
-];
+type ApiCustomer = Omit<Partial<Customer>, 'bookings'> & {
+  id?: string;
+  name?: string;
+  bookings?: Array<
+    Partial<CustomerBooking> & {
+      dates?: string[];
+      startTime?: string;
+      endTime?: string;
+      paymentStatus?: string;
+    }
+  >;
+};
+
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+).replace(/\/+$/, '');
+
+function mapCustomer(item: ApiCustomer): Customer {
+  const bookings: CustomerBooking[] = (item.bookings ?? []).map((booking) => ({
+    id: booking.id || '',
+    reference: booking.reference || 'No reference',
+    purpose: booking.purpose || 'Other',
+    date: booking.date || booking.dates?.[0] || '',
+    time:
+      booking.time ||
+      [booking.startTime, booking.endTime].filter(Boolean).join(' - ') ||
+      'Not specified',
+    amount:
+      typeof booking.amount === 'number' && Number.isFinite(booking.amount)
+        ? booking.amount
+        : 0,
+    status: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'].includes(
+      booking.status || '',
+    )
+      ? (booking.status as CustomerBooking['status'])
+      : 'PENDING',
+  }));
+
+  return {
+    id: item.id || '',
+    name: item.name || 'Unknown customer',
+    phone: item.phone || '',
+    whatsapp: item.whatsapp || item.phone || '',
+    email: item.email || '',
+    totalBookings:
+      typeof item.totalBookings === 'number'
+        ? item.totalBookings
+        : bookings.length,
+    totalSpent:
+      typeof item.totalSpent === 'number' ? item.totalSpent : 0,
+    lastBooking: item.lastBooking || '',
+    createdAt: item.createdAt || '',
+    bookings,
+  };
+}
 
 export default function CustomersPage() {
-  const [customers] = useState<Customer[]>(initialCustomers);
-
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadCustomers() {
+      setLoading(true);
+      setError('');
+
+      try {
+        const token = localStorage.getItem('trc_admin_token');
+
+        if (!token) {
+          throw new Error('Your admin session is missing. Please sign in again.');
+        }
+
+        const response = await fetch(`${API_URL}/api/admin/customers`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+
+        const body = await response.json().catch(() => ({}));
+
+        if (!response.ok || body.success !== true || !Array.isArray(body.data)) {
+          throw new Error(body.message || 'Could not load customers.');
+        }
+
+        setCustomers(body.data.map(mapCustomer));
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+
+        setError(
+          err instanceof Error ? err.message : 'Could not load customers.',
+        );
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+
+    void loadCustomers();
+    return () => controller.abort();
+  }, []);
 
   const filteredCustomers = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) {
-      return customers;
-    }
+    if (!query) return customers;
 
-    return customers.filter((customer) => {
-      return (
-        customer.name.toLowerCase().includes(query) ||
-        customer.phone.toLowerCase().includes(query) ||
-        customer.whatsapp.toLowerCase().includes(query) ||
-        customer.email.toLowerCase().includes(query)
-      );
-    });
+    return customers.filter((customer) =>
+      [
+        customer.name,
+        customer.phone,
+        customer.whatsapp,
+        customer.email,
+      ].some((value) => value.toLowerCase().includes(query)),
+    );
   }, [customers, search]);
 
-  const totalRevenue = customers.reduce((total, customer) => total + customer.totalSpent, 0);
+  const totalRevenue = customers.reduce(
+    (total, customer) => total + customer.totalSpent,
+    0,
+  );
 
-  const repeatCustomers = customers.filter((customer) => customer.totalBookings > 1).length;
+  const repeatCustomers = customers.filter(
+    (customer) => customer.totalBookings > 1,
+  ).length;
 
   return (
     <>
       <div className="space-y-8">
-        {/* Header */}
         <div>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -242,21 +181,30 @@ export default function CustomersPage() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8A958F]">
                 Total Customers
               </p>
-
-              <p className="mt-1 text-xl font-bold text-[#064E3B]">{customers.length}</p>
+              <p className="mt-1 text-xl font-bold text-[#064E3B]">
+                {customers.length}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Stats */}
+        {error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+          >
+            {error}
+          </div>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-[#E4E9E4] bg-white p-5 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#8A958F]">
               Customers
             </p>
-
-            <p className="mt-2 text-2xl font-bold text-[#17201C]">{customers.length}</p>
-
+            <p className="mt-2 text-2xl font-bold text-[#17201C]">
+              {customers.length}
+            </p>
             <p className="mt-1 text-xs text-[#66736C]">Registered customers</p>
           </div>
 
@@ -264,9 +212,9 @@ export default function CustomersPage() {
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#8A958F]">
               Repeat Customers
             </p>
-
-            <p className="mt-2 text-2xl font-bold text-[#047857]">{repeatCustomers}</p>
-
+            <p className="mt-2 text-2xl font-bold text-[#047857]">
+              {repeatCustomers}
+            </p>
             <p className="mt-1 text-xs text-[#66736C]">More than one booking</p>
           </div>
 
@@ -274,20 +222,26 @@ export default function CustomersPage() {
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#8A958F]">
               Customer Revenue
             </p>
-
             <p className="mt-2 text-2xl font-bold text-[#17201C]">
               M{totalRevenue.toLocaleString()}
             </p>
-
             <p className="mt-1 text-xs text-[#66736C]">From paid bookings</p>
           </div>
         </div>
 
-        {/* Customer list */}
         <div className="rounded-2xl border border-[#E4E9E4] bg-white shadow-sm">
           <CustomerFilters search={search} onSearchChange={setSearch} />
 
-          <CustomerTable customers={filteredCustomers} onSelectCustomer={setSelectedCustomer} />
+          {loading ? (
+            <div className="p-10 text-center text-sm text-[#66736C]">
+              Loading customers...
+            </div>
+          ) : (
+            <CustomerTable
+              customers={filteredCustomers}
+              onSelectCustomer={setSelectedCustomer}
+            />
+          )}
         </div>
       </div>
 

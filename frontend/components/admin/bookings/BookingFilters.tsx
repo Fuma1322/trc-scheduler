@@ -14,7 +14,7 @@ type Props = {
   counts: {
     all: number;
     pending: number;
-    paid: number;
+    approved: number;
     rejected: number;
     cancelled: number;
   };
@@ -43,9 +43,9 @@ export default function BookingFilters({
       count: counts.pending,
     },
     {
-      value: 'PAID',
-      label: 'Paid',
-      count: counts.paid,
+      value: 'APPROVED',
+      label: 'Approved',
+      count: counts.approved,
     },
     {
       value: 'REJECTED',
