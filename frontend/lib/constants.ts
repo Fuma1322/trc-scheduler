@@ -17,12 +17,7 @@ export const ACTIVITIES = [
     description: 'Training and educational events',
     icon: 'GraduationCap',
   },
-  {
-    id: 'funeral',
-    name: 'Funeral',
-    description: 'Funeral and memorial gatherings',
-    icon: 'Flower2',
-  },
+ 
   {
     id: 'birthday',
     name: 'Birthday',

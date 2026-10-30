@@ -32,7 +32,6 @@ const ACTIVITIES = new Set([
   'press-conference',
   'meeting',
   'workshop',
-  'funeral',
   'birthday',
   'other',
 ]);

@@ -1,7 +1,9 @@
+
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -11,8 +13,73 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+type AuthStatus = 'checking' | 'authorized' | 'error';
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('checking');
+  const [authError, setAuthError] = useState('');
+
+  const verifySession = useCallback(async () => {
+    setAuthStatus('checking');
+    setAuthError('');
+
+    const token = localStorage.getItem('trc_admin_token');
+
+    if (!token) {
+      router.replace('/login');
+      return;
+    }
+
+    try {
+      const apiBaseUrl = (
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      ).replace(/\/+$/, '');
+
+      const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+
+      const result = await response.json();
+
+      if (
+        response.status === 401 ||
+        response.status === 403 ||
+        response.status === 404
+      ) {
+        localStorage.removeItem('trc_admin_token');
+        localStorage.removeItem('trc_admin');
+        router.replace('/login');
+        return;
+      }
+
+      if (!response.ok || !result.success || !result.admin) {
+        throw new Error(
+          result.message || 'Unable to verify your admin session.',
+        );
+      }
+
+      localStorage.setItem('trc_admin', JSON.stringify(result.admin));
+      setAuthStatus('authorized');
+    } catch (error) {
+      setAuthError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to verify your admin session.',
+      );
+      setAuthStatus('error');
+    }
+  }, [router]);
+
+  useEffect(() => {
+    void verifySession();
+  }, [verifySession]);
 
   const links = [
     {
@@ -42,15 +109,54 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
   ];
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+
+  if (authStatus === 'checking') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F8F5]">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[#D1FAE5] border-t-[#047857]" />
+          <p className="mt-4 text-sm font-medium text-[#68736D]">
+            Verifying administrator access...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authStatus === 'error') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F8F5] px-5">
+        <div className="max-w-md text-center">
+          <h2 className="text-lg font-bold text-[#17201C]">
+            Unable to verify your session
+          </h2>
+
+          <p className="mt-2 text-sm text-[#68736D]">
+            {authError}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => void verifySession()}
+            className="mt-5 rounded-xl bg-[#064E3B] px-5 py-3 text-sm font-semibold text-white"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (authStatus !== 'authorized') {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen text-[#17201C]">
-      {/* =========================================================
-          DESKTOP SIDEBAR
-      ========================================================= */}
+      {/* DESKTOP SIDEBAR */}
       <aside className="fixed inset-y-0 left-0 z-50 hidden w-[270px] flex-col border-r border-[#E5EAE6] bg-white lg:flex">
-        {/* BRAND */}
         <div className="px-6 pb-7 pt-7">
           <Link href="/" className="group inline-flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#064E3B] shadow-[0_5px_18px_rgba(6,78,59,0.16)] transition-transform duration-200 group-hover:scale-[1.03]">
@@ -70,10 +176,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         </div>
 
-        {/* SUBTLE DIVIDER */}
         <div className="mx-6 h-px bg-[#EEF1EF]" />
 
-        {/* NAVIGATION */}
         <div className="flex-1 overflow-y-auto px-4 py-7">
           <p className="mb-3 px-3 text-[9px] font-bold uppercase tracking-[0.2em] text-[#A0AAA5]">
             Workspace
@@ -94,7 +198,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       : 'text-[#6E7973] hover:bg-[#F7F8F6] hover:text-[#17201C]'
                   } `}
                 >
-                  {/* ACTIVE RAIL */}
                   {active && (
                     <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-[#047857]" />
                   )}
@@ -120,7 +223,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </nav>
         </div>
 
-        {/* SIDEBAR FOOTER */}
         <div className="border-t border-[#E5EAE6] px-6 py-5">
           <div className="mb-4 flex items-center gap-2">
             <span className="relative flex h-2 w-2">
@@ -139,15 +241,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* =========================================================
-          MAIN APPLICATION
-      ========================================================= */}
+      {/* MAIN APPLICATION */}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-[270px]">
-        {/* =======================================================
-            TOP BAR
-        ======================================================= */}
         <header className="sticky top-0 z-40 flex h-[68px] shrink-0 items-center justify-between border-b border-[#E5EAE6] bg-white/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-          {/* MOBILE BRAND */}
           <Link href="/" className="flex items-center gap-2.5 lg:hidden">
             <div className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#064E3B] shadow-sm">
               <span className="text-[9px] font-bold text-white">TRC</span>
@@ -164,7 +260,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </Link>
 
-          {/* DESKTOP PAGE CONTEXT */}
           <div className="hidden lg:block">
             <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#9AA49F]">
               TRC Event Scheduler
@@ -175,19 +270,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </h2>
           </div>
 
-          {/* RIGHT SIDE */}
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* STATUS */}
             <div className="hidden items-center gap-2 rounded-full border border-[#D1FAE5] bg-[#ECFDF5] px-3 py-1.5 sm:flex">
               <span className="h-1.5 w-1.5 rounded-full bg-[#047857]" />
-
               <span className="text-[10px] font-semibold text-[#047857]">Online</span>
             </div>
 
-            {/* DIVIDER */}
             <div className="hidden h-7 w-px bg-[#E5EAE6] sm:block" />
 
-            {/* PROFILE */}
             <button
               type="button"
               className="flex items-center gap-2.5 rounded-xl p-1 transition-colors hover:bg-[#F7F8F6]"
@@ -198,16 +288,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               <div className="hidden text-left md:block">
                 <p className="text-[11px] font-semibold text-[#17201C]">Administrator</p>
-
                 <p className="mt-0.5 text-[9px] text-[#929D97]">TRC Hall</p>
               </div>
             </button>
           </div>
         </header>
 
-        {/* =======================================================
-            PAGE CONTENT
-        ======================================================= */}
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1600px] px-4 py-5 pb-24 sm:px-6 sm:py-7 lg:px-8 lg:py-8 lg:pb-8">
             {children}
@@ -215,9 +301,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
 
-      {/* =========================================================
-          MOBILE BOTTOM NAVIGATION
-      ========================================================= */}
+      {/* MOBILE BOTTOM NAVIGATION */}
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[#E5EAE6] bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-[0_-8px_30px_rgba(6,78,59,0.08)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-md items-center justify-around">
           {links.map((link) => {
