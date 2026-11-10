@@ -11,7 +11,7 @@ type Props = {
 
 const statusStyles = {
   PENDING: 'bg-[#FFF7E8] text-[#B45309]',
-  PAID: 'bg-[#ECFDF5] text-[#047857]',
+  APPROVED: 'bg-[#ECFDF5] text-[#047857]',
   REJECTED: 'bg-[#FEF2F2] text-[#B91C1C]',
   CANCELLED: 'bg-[#F3F4F3] text-[#69736E]',
 };
@@ -163,12 +163,12 @@ export default function CustomerDetailsModal({ customer, onClose }: Props) {
                       {booking.time}
                     </span>
 
-                    {booking.status === 'PAID' && (
-                      <span className="flex items-center gap-1.5 text-[#047857]">
-                        <Check size={13} />
-                        Paid
-                      </span>
-                    )}
+              {booking.status === 'APPROVED' && (
+                  <span className="flex items-center gap-1.5 text-[#047857]">
+                    <Check size={13} />
+                    Approved
+                  </span>
+                )}
                   </div>
                 </div>
               ))}
