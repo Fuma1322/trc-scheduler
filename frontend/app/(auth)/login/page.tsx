@@ -36,34 +36,31 @@ export default function LoginPage() {
 
     try {
       const apiBaseUrl = (
-        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
       ).replace(/\/+$/, '');
 
       const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-        }),
-      });
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: email.trim().toLowerCase(),
+    password,
+  }),
+});
 
       const result = (await response.json()) as LoginResponse;
 
-      if (!response.ok || !result.success || !result.token) {
-        throw new Error(result.message || 'Login failed. Check your credentials.');
-      }
+if (!response.ok || !result.success || !result.admin) {
+  throw new Error(
+    result.message || 'Login failed. Check your credentials.'
+  );
+}
 
-      // Store the token for subsequent authenticated admin requests.
-      localStorage.setItem('trc_admin_token', result.token);
-
-      if (result.admin) {
-        localStorage.setItem('trc_admin', JSON.stringify(result.admin));
-      }
-
-      router.replace('/dashboard');
+router.replace('/dashboard');
+router.refresh();
     } catch (err) {
       setError(
         err instanceof TypeError
