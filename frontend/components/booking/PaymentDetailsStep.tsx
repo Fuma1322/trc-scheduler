@@ -228,6 +228,18 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
                   </button>
                 </div>
 
+              </div>
+              <div className="mt-6 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#047857]">
+                  M-Pesa Recipient
+                </p>
+
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-md font-bold tracking-tight text-[#064E3B]">
+                    Transformation Resource Centre
+                  </p>
+                </div>
+
                 <div className="mt-5 border-t border-[#D1E8DD] pt-5">{renderAmount()}</div>
               </div>
 
@@ -281,20 +293,28 @@ export default function PaymentDetailsStep({ booking, onChange, onBack, onSubmit
                   <div>
                     <p className="text-xs text-[#8A958F]">Bank</p>
 
-                    <p className="mt-1 text-sm font-semibold text-[#17201C]">TRC Bank</p>
+                    <p className="mt-1 text-sm font-semibold text-[#17201C]">First National Bank (FNB)</p>
                   </div>
 
                   <div>
                     <p className="text-xs text-[#8A958F]">Account holder</p>
 
-                    <p className="mt-1 text-sm font-semibold text-[#17201C]">TRC Hall</p>
+                    <p className="mt-1 text-sm font-semibold text-[#17201C]">Transformation Resource Centre</p>
                   </div>
 
                   <div>
                     <p className="text-xs text-[#8A958F]">Account number</p>
 
                     <p className="mt-1 text-sm font-semibold text-[#17201C]">
-                      Bank details to be provided
+                      62106641972
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-[#8A958F]">Branch</p>
+
+                    <p className="mt-1 text-sm font-semibold text-[#17201C]">
+                     Pioneer Branch
                     </p>
                   </div>
 

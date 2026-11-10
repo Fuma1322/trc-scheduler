@@ -14,18 +14,9 @@ import { requireAdminRole } from './middleware/admin.middleware';
 
 const app = express();
 
-<<<<<<< HEAD
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    credentials: true,
-  })
-);
-=======
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
 }));
->>>>>>> ca256526af9ac307fc3a9b53b56908e24b8f2f50
 
 app.use(express.json());
 app.use(cookieParser());

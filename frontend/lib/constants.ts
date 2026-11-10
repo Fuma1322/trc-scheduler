@@ -84,4 +84,4 @@ export const HALL_NAME = 'TRC Hall';
 export const FULL_DAY_FEE = 800;
 export const HALF_DAY_FEE = 500;
 
-export const MPESA_MERCHANT_NUMBER = '123456';
+export const MPESA_MERCHANT_NUMBER = '46513';
