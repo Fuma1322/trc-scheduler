@@ -95,7 +95,7 @@ export default function MonthGrid({
             <button
               key={date.toISOString()}
               type="button"
-              disabled={isPast || dayAvailability?.status === 'full'}
+              disabled={isPast || !dayAvailability || dayAvailability.status === 'full'}
               onClick={() => onSelectDate(date)}
               className={`relative flex min-h-[76px] flex-col items-center border-b border-r border-[#E9EEEB] p-2 text-center transition-all sm:min-h-[100px] sm:p-3 ${
                 isPast
