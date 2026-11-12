@@ -78,11 +78,11 @@ export default function CustomerDetailsModal({ customer, onClose }: Props) {
             <div className="rounded-2xl border border-[#E4E9E4] p-4">
               <div className="flex items-center gap-2 text-[#047857]">
                 <Mail size={16} />
-                <span className="text-xs font-semibold uppercase tracking-[0.1em]">Email</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.1em]">WhatsApp Number</span>
               </div>
 
               <p className="mt-3 break-all text-sm font-semibold text-[#17201C]">
-                {customer.email}
+                {customer.whatsapp}
               </p>
             </div>
           </div>
