@@ -40,16 +40,16 @@ export default function LoginPage() {
       ).replace(/\/+$/, '');
 
       const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
-  method: 'POST',
-  credentials: 'include',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    email: email.trim().toLowerCase(),
-    password,
-  }),
-});
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
 
       const result = (await response.json()) as LoginResponse;
 
