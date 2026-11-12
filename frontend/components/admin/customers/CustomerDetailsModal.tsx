@@ -112,7 +112,16 @@ export default function CustomerDetailsModal({ customer, onClose }: Props) {
                 Customer Since
               </p>
 
-              <p className="mt-2 text-xl font-bold text-[#17201C]">{customer.createdAt}</p>
+              <p className="mt-2 text-xl font-bold text-[#17201C]">
+                {new Date(customer.createdAt).toLocaleString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })}
+              </p>
             </div>
           </div>
 
