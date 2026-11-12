@@ -14,9 +14,12 @@ import { requireAdminRole } from './middleware/admin.middleware';
 
 const app = express();
 
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-}));
+app.use(
+  cors({
+    origin: ['https://trc-scheduler.vercel.app', 'http://localhost:3000'],
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(cookieParser());
