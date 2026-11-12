@@ -1,8 +1,8 @@
 'use client';
 
-import { CalendarDays, Check, Clock3, Mail, Phone, User, X } from 'lucide-react';
-
+import { FaWhatsapp } from 'react-icons/fa';
 import type { Customer } from './CustomersPage';
+import { CalendarDays, Check, Clock3, Phone, User, X } from 'lucide-react';
 
 type Props = {
   customer: Customer;
@@ -77,7 +77,7 @@ export default function CustomerDetailsModal({ customer, onClose }: Props) {
 
             <div className="rounded-2xl border border-[#E4E9E4] p-4">
               <div className="flex items-center gap-2 text-[#047857]">
-                <Mail size={16} />
+                <FaWhatsapp size={16} />
                 <span className="text-xs font-semibold uppercase tracking-[0.1em]">WhatsApp Number</span>
               </div>
 
