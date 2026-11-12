@@ -93,45 +93,58 @@ export default function BookingsPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  useEffect(() => {
-    const controller = new AbortController();
+  
+useEffect(() => {
+  const controller = new AbortController();
 
-    async function loadBookings() {
-      setLoading(true);
-      setError('');
+  async function loadBookings() {
+    setLoading(true);
+    setError('');
 
-      try {
-        const token = localStorage.getItem('trc_admin_token');
-        if (!token) {
-          throw new Error('Your admin session is missing. Please sign in again.');
-        }
+    try {
+      const response = await fetch(`${API_URL}/api/admin/bookings`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+        cache: 'no-store',
+      });
 
-        const response = await fetch(`${API_URL}/api/admin/bookings`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-          cache: 'no-store',
-        });
-        const body = await response.json().catch(() => ({}));
+      const body = await response.json().catch(() => ({}));
 
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Your admin session has expired. Please sign in again.');
-        }
-        if (!response.ok || body.success !== true || !Array.isArray(body.data)) {
-          throw new Error(body.message || 'Could not load bookings.');
-        }
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          'Your admin session has expired or you do not have permission to view bookings. Please sign in again.',
+        );
+      }
 
-        setBookings(body.data.map(mapBooking));
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Could not load bookings.');
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+      if (!response.ok || body.success !== true || !Array.isArray(body.data)) {
+        throw new Error(body.message || 'Could not load bookings.');
+      }
+
+      setBookings(body.data.map(mapBooking));
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+
+      setError(
+        err instanceof Error ? err.message : 'Could not load bookings.',
+      );
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
       }
     }
+  }
 
-    void loadBookings();
-    return () => controller.abort();
-  }, []);
+  void loadBookings();
+
+  return () => controller.abort();
+}, []);
+
 
   const filteredBookings = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -150,54 +163,60 @@ export default function BookingsPage() {
     });
   }, [bookings, search, statusFilter]);
 
-  const updateBookingStatus = async (id: string, status: BookingStatus) => {
-    if (updatingId) return;
+  
+const updateBookingStatus = async (id: string, status: BookingStatus) => {
+  if (updatingId) return;
 
-    setUpdatingId(id);
-    setError('');
-    setNotice('');
+  setUpdatingId(id);
+  setError('');
+  setNotice('');
 
-    try {
-      const token = localStorage.getItem('trc_admin_token');
-      if (!token) {
-        throw new Error('Your admin session is missing. Please sign in again.');
-      }
-
-      const response = await fetch(
-        `${API_URL}/api/admin/bookings/${encodeURIComponent(id)}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status }),
+  try {
+    const response = await fetch(
+      `${API_URL}/api/admin/bookings/${encodeURIComponent(id)}/status`,
+      {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
         },
-      );
-      const body = await response.json().catch(() => ({}));
+        body: JSON.stringify({ status }),
+      },
+    );
 
-      if (response.status === 401 || response.status === 403) {
-        throw new Error('Your admin session has expired. Please sign in again.');
-      }
-      if (!response.ok || body.success !== true) {
-        throw new Error(body.message || 'Could not update booking status.');
-      }
+    const body = await response.json().catch(() => ({}));
 
-      setBookings((current) =>
-        current.map((booking) =>
-          booking.id === id ? { ...booking, status } : booking,
-        ),
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        'Your admin session has expired or you do not have permission to update bookings. Please sign in again.',
       );
-      setSelectedBooking((current) =>
-        current && current.id === id ? { ...current, status } : current,
-      );
-      setNotice(`Booking status updated to ${status.toLowerCase()}.`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update booking.');
-    } finally {
-      setUpdatingId(null);
     }
-  };
+
+    if (!response.ok || body.success !== true) {
+      throw new Error(body.message || 'Could not update booking status.');
+    }
+
+    setBookings((current) =>
+      current.map((booking) =>
+        booking.id === id ? { ...booking, status } : booking,
+      ),
+    );
+
+    setSelectedBooking((current) =>
+      current && current.id === id ? { ...current, status } : current,
+    );
+
+    setNotice(`Booking status updated to ${status.toLowerCase()}.`);
+  } catch (err) {
+    setError(
+      err instanceof Error ? err.message : 'Could not update booking.',
+    );
+  } finally {
+    setUpdatingId(null);
+  }
+};
+
 
   const counts = {
     all: bookings.length,
