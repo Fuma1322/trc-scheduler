@@ -115,63 +115,69 @@ export default function PaymentsPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  const loadPayments = useCallback(async (status: 'ALL' | PaymentStatus) => {
-    const token =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('trc_admin_token')
-        : null;
+  
+const loadPayments = useCallback(async (status: 'ALL' | PaymentStatus) => {
+  setLoading(true);
+  setError('');
 
-    if (!token) {
-      setError('Your admin session is missing. Please sign in again.');
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const query = status === 'ALL'
+  try {
+    const query =
+      status === 'ALL'
         ? ''
         : `?status=${encodeURIComponent(status)}`;
 
-      const response = await fetch(`${API_URL}/api/admin/payments${query}`, {
+    const response = await fetch(
+      `${API_URL}/api/admin/payments${query}`,
+      {
         method: 'GET',
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
         cache: 'no-store',
-      });
+      },
+    );
 
-      const body = await response.json().catch(() => null);
+    const body = await response.json().catch(() => null);
 
-      if (response.status === 401 || response.status === 403) {
-        setError('Your admin session has expired. Please sign in again.');
-        return;
-      }
-
-      if (!response.ok || body?.success !== true || !Array.isArray(body.data)) {
-        throw new Error(getErrorMessage(body, 'Could not load payments.'));
-      }
-
-      const loadedPayments = (body.data as ApiPayment[]).map(toPayment);
-      setPayments(loadedPayments);
-
-      setSelectedPayment((current) => {
-        if (!current) return null;
-        return loadedPayments.find((payment) => payment.id === current.id) ?? null;
-      });
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Could not load payments. Check that the backend is running.',
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        'Your admin session has expired or you do not have permission to view payments. Please sign in again.',
       );
-    } finally {
-      setLoading(false);
     }
-  }, []);
+
+    if (
+      !response.ok ||
+      body?.success !== true ||
+      !Array.isArray(body.data)
+    ) {
+      throw new Error(
+        getErrorMessage(body, 'Could not load payments.'),
+      );
+    }
+
+    const loadedPayments = (body.data as ApiPayment[]).map(toPayment);
+
+    setPayments(loadedPayments);
+
+    setSelectedPayment((current) => {
+      if (!current) return null;
+
+      return (
+        loadedPayments.find((payment) => payment.id === current.id) ?? null
+      );
+    });
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Could not load payments. Check that the backend is running.',
+    );
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
 
   useEffect(() => {
     void loadPayments('ALL');
@@ -216,61 +222,59 @@ export default function PaymentsPage() {
     0,
   );
 
-  const updatePaymentStatus = async (
-    id: string,
-    status: PaymentStatus,
-  ) => {
-    if (updatingId) return;
+  
+const updatePaymentStatus = async (
+  id: string,
+  status: PaymentStatus,
+) => {
+  if (updatingId) return;
 
-    const token = localStorage.getItem('trc_admin_token');
+  setUpdatingId(id);
+  setError('');
+  setNotice('');
 
-    if (!token) {
-      setError('Your admin session is missing. Please sign in again.');
-      return;
-    }
-
-    setUpdatingId(id);
-    setError('');
-    setNotice('');
-
-    try {
-      const response = await fetch(
-        `${API_URL}/api/admin/payments/${encodeURIComponent(id)}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({ status }),
+  try {
+    const response = await fetch(
+      `${API_URL}/api/admin/payments/${encodeURIComponent(id)}/status`,
+      {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ status }),
+      },
+    );
+
+    const body = await response.json().catch(() => null);
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        'Your admin session has expired or you do not have permission to update payments. Please sign in again.',
       );
-
-      const body = await response.json().catch(() => null);
-
-      if (response.status === 401 || response.status === 403) {
-        throw new Error('Your admin session has expired. Please sign in again.');
-      }
-
-      if (!response.ok || body?.success !== true) {
-        throw new Error(
-          getErrorMessage(body, 'Could not update payment status.'),
-        );
-      }
-
-      setNotice(`Payment status updated to ${status}.`);
-      await loadPayments('ALL');
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Could not update payment status.',
-      );
-    } finally {
-      setUpdatingId(null);
     }
-  };
+
+    if (!response.ok || body?.success !== true) {
+      throw new Error(
+        getErrorMessage(body, 'Could not update payment status.'),
+      );
+    }
+
+    setNotice(`Payment status updated to ${status}.`);
+
+    await loadPayments('ALL');
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Could not update payment status.',
+    );
+  } finally {
+    setUpdatingId(null);
+  }
+};
+
 
   const counts = {
     ALL: payments.length,
