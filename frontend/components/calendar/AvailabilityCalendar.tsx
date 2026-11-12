@@ -45,7 +45,7 @@ export default function AvailabilityCalendar() {
       setAvailability([]);
 
       try {
-        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001')
+        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
           .replace(/\/+$/, '');
 
         const response = await fetch(

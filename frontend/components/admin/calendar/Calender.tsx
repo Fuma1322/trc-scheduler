@@ -86,74 +86,89 @@ export default function Calendar() {
 
   const start = formatDate(days[0]);
   const end = formatDate(days[6]);
+  
 
-  useEffect(() => {
-    const controller = new AbortController();
+useEffect(() => {
+  const controller = new AbortController();
 
-    async function loadBookings() {
-      setLoading(true);
-      setError('');
-      setBookings([]);
+  async function loadBookings() {
+    setLoading(true);
+    setError('');
 
-      try {
-        const token = localStorage.getItem('trc_admin_token');
-        if (!token) throw new Error('Your admin session is missing. Please sign in again.');
+    try {
+      const baseUrl = (
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      ).replace(/\/+$/, '');
 
-        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
-          .replace(/\/+$/, '');
-
-        const response = await fetch(
-          `${baseUrl}/api/admin/calendar?start=${start}&end=${end}`,
-          {
-            headers: {
-              Accept: 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            cache: 'no-store',
-            signal: controller.signal,
+      const response = await fetch(
+        `${baseUrl}/api/admin/calendar?start=${start}&end=${end}`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json',
           },
+          cache: 'no-store',
+          signal: controller.signal,
+        },
+      );
+
+      const result = await response.json();
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          'Your admin session is expired or you do not have calendar access. Please sign in again.',
         );
+      }
 
-        const result = await response.json();
+      if (!response.ok || result.success !== true) {
+        throw new Error(
+          result.message || 'Unable to load calendar bookings.',
+        );
+      }
 
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Your admin session is expired or does not have calendar access. Please sign in again.');
-        }
+      const records: ApiBooking[] = Array.isArray(result.data)
+        ? result.data
+        : Array.isArray(result.data?.bookings)
+          ? result.data.bookings
+          : [];
 
-        if (!response.ok || result.success !== true) {
-          throw new Error(result.message || 'Unable to load calendar bookings.');
-        }
-
-        const records: ApiBooking[] = Array.isArray(result.data)
-          ? result.data
-          : Array.isArray(result.data?.bookings)
-            ? result.data.bookings
-            : [];
-
-        const entries = records.flatMap((record) => {
-          const recordDates = Array.isArray(record.dates) && record.dates.length
+      const entries = records.flatMap((record) => {
+        const recordDates =
+          Array.isArray(record.dates) && record.dates.length
             ? record.dates
             : record.date
               ? [record.date]
               : [];
 
-          return recordDates
-            .filter((date) => date >= start && date <= end)
-            .map((date) => toBooking(record, date));
-        });
+        return recordDates
+          .filter((date) => date >= start && date <= end)
+          .map((date) => toBooking(record, date));
+      });
 
-        setBookings(entries);
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Unable to load calendar bookings.');
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+      setBookings(entries);
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to load calendar bookings.',
+      );
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
       }
     }
+  }
 
-    void loadBookings();
-    return () => controller.abort();
-  }, [start, end]);
+  void loadBookings();
+
+  return () => controller.abort();
+}, [start, end]);
+
 
   const monthLabel = selectedDate.toLocaleDateString('en-US', {
     month: 'long',
