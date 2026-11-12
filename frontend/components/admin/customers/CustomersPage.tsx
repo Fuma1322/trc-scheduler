@@ -93,46 +93,62 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const controller = new AbortController();
+  
+useEffect(() => {
+  const controller = new AbortController();
 
-    async function loadCustomers() {
-      setLoading(true);
-      setError('');
+  async function loadCustomers() {
+    setLoading(true);
+    setError('');
 
-      try {
-        const token = localStorage.getItem('trc_admin_token');
+    try {
+      const response = await fetch(`${API_URL}/api/admin/customers`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+        cache: 'no-store',
+      });
 
-        if (!token) {
-          throw new Error('Your admin session is missing. Please sign in again.');
-        }
+      const body = await response.json().catch(() => ({}));
 
-        const response = await fetch(`${API_URL}/api/admin/customers`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-        });
-
-        const body = await response.json().catch(() => ({}));
-
-        if (!response.ok || body.success !== true || !Array.isArray(body.data)) {
-          throw new Error(body.message || 'Could not load customers.');
-        }
-
-        setCustomers(body.data.map(mapCustomer));
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
-
-        setError(
-          err instanceof Error ? err.message : 'Could not load customers.',
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          'Your admin session has expired or you do not have permission to view customers. Please sign in again.',
         );
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+      }
+
+      if (
+        !response.ok ||
+        body.success !== true ||
+        !Array.isArray(body.data)
+      ) {
+        throw new Error(body.message || 'Could not load customers.');
+      }
+
+      setCustomers(body.data.map(mapCustomer));
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+
+      setError(
+        err instanceof Error ? err.message : 'Could not load customers.',
+      );
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
       }
     }
+  }
 
-    void loadCustomers();
-    return () => controller.abort();
-  }, []);
+  void loadCustomers();
+
+  return () => controller.abort();
+}, []);
+
 
   const filteredCustomers = useMemo(() => {
     const query = search.trim().toLowerCase();
