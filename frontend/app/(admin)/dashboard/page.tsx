@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -82,16 +81,10 @@ export default function DashboardPage() {
     setError('');
 
     try {
-      const token = localStorage.getItem('trc_admin_token');
-
-      if (!token) {
-        throw new Error('Your admin session is missing. Please sign in again.');
-      }
-
+      
       const response = await fetch(`${API_URL}/api/admin/dashboard`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        method: 'GET',
+        credentials: 'include',
         cache: 'no-store',
       });
 

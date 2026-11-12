@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -22,60 +21,47 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authStatus, setAuthStatus] = useState<AuthStatus>('checking');
   const [authError, setAuthError] = useState('');
 
-  const verifySession = useCallback(async () => {
-    setAuthStatus('checking');
-    setAuthError('');
+  
+const verifySession = useCallback(async () => {
+  setAuthStatus('checking');
+  setAuthError('');
 
-    const token = localStorage.getItem('trc_admin_token');
+  try {
+    const apiBaseUrl = (
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+    ).replace(/\/+$/, '');
 
-    if (!token) {
+    const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    });
+
+    const result = await response.json();
+
+    if (response.status === 401 || response.status === 403) {
       router.replace('/login');
       return;
     }
 
-    try {
-      const apiBaseUrl = (
-        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
-      ).replace(/\/+$/, '');
-
-      const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        cache: 'no-store',
-      });
-
-      const result = await response.json();
-
-      if (
-        response.status === 401 ||
-        response.status === 403 ||
-        response.status === 404
-      ) {
-        localStorage.removeItem('trc_admin_token');
-        localStorage.removeItem('trc_admin');
-        router.replace('/login');
-        return;
-      }
-
-      if (!response.ok || !result.success || !result.admin) {
-        throw new Error(
-          result.message || 'Unable to verify your admin session.',
-        );
-      }
-
-      localStorage.setItem('trc_admin', JSON.stringify(result.admin));
-      setAuthStatus('authorized');
-    } catch (error) {
-      setAuthError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to verify your admin session.',
+    if (!response.ok || !result.success || !result.admin) {
+      throw new Error(
+        result.message || 'Unable to verify your admin session.',
       );
-      setAuthStatus('error');
     }
-  }, [router]);
+
+    localStorage.setItem('trc_admin', JSON.stringify(result.admin));
+    setAuthStatus('authorized');
+  } catch (error) {
+    setAuthError(
+      error instanceof Error
+        ? error.message
+        : 'Unable to verify your admin session.',
+    );
+    setAuthStatus('error');
+  }
+}, [router]);
+
 
   useEffect(() => {
     void verifySession();
