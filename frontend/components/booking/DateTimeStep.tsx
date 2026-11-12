@@ -11,7 +11,11 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-import { BOOKING_DURATIONS, HALF_DAY_SLOTS, BOOKING_HOURS } from '@/lib/constants';
+import {
+  BOOKING_DURATIONS,
+  HALF_DAY_SLOTS,
+  BOOKING_HOURS,
+} from '@/lib/constants';
 import type { DayAvailability } from '@/components/calendar/calendar-data';
 
 type DurationType = 'full-day' | 'half-day' | 'custom';
@@ -49,19 +53,30 @@ function isSameDay(date1: Date, date2: Date) {
   );
 }
 
+function hourOf(time: string): number {
+  return Number(time.split(':')[0]);
+}
+
+// 20:00 is a valid end time, but not a valid start time.
+const END_TIMES = Array.from(
+  new Set([...BOOKING_HOURS, '20:00']),
+).sort((a, b) => hourOf(a) - hourOf(b));
+
+const START_TIMES = END_TIMES.filter(
+  (time) => hourOf(time) < 20,
+);
+
 export default function DateTimeStep({
   selectedDates,
   durationType,
   halfDay,
   startTime,
   endTime,
-
   onDatesChange,
   onDurationChange,
   onHalfDayChange,
   onStartTimeChange,
   onEndTimeChange,
-
   onBack,
   onContinue,
 }: Props) {
@@ -83,7 +98,13 @@ export default function DateTimeStep({
     year: 'numeric',
   });
 
-  // Load live availability whenever the displayed month changes.
+  // Include the visible month and every month containing a selected date.
+  // This supports bookings across multiple months.
+  const selectedDateKeys = selectedDates
+    .map(formatDate)
+    .sort()
+    .join(',');
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -93,34 +114,64 @@ export default function DateTimeStep({
       setAvailability([]);
 
       try {
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
+        const months = new Map<string, { year: number; month: number }>();
+
+        months.set(`${year}-${month}`, { year, month });
+
+        for (const date of selectedDateKeys.split(',').filter(Boolean)) {
+          const [dateYear, dateMonth] = date.split('-').map(Number);
+          const monthIndex = dateMonth - 1;
+
+          months.set(`${dateYear}-${monthIndex}`, {
+            year: dateYear,
+            month: monthIndex,
+          });
+        }
 
         const baseUrl = (
           process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
         ).replace(/\/+$/, '');
 
-        const response = await fetch(
-          `${baseUrl}/api/bookings/availability?start=${formatDate(firstDay)}&end=${formatDate(lastDay)}`,
-          {
-            signal: controller.signal,
-            cache: 'no-store',
-          },
+        const results = await Promise.all(
+          Array.from(months.values()).map(async (item) => {
+            const firstDay = new Date(item.year, item.month, 1);
+            const lastDay = new Date(item.year, item.month + 1, 0);
+
+            const response = await fetch(
+              `${baseUrl}/api/bookings/availability?start=${formatDate(firstDay)}&end=${formatDate(lastDay)}`,
+              {
+                signal: controller.signal,
+                cache: 'no-store',
+              },
+            );
+
+            const result = await response.json();
+
+            if (
+              !response.ok ||
+              result.success !== true ||
+              !Array.isArray(result.data)
+            ) {
+              throw new Error(
+                result.message || 'Unable to load booking availability.',
+              );
+            }
+
+            return result.data as DayAvailability[];
+          }),
         );
 
-        const result = await response.json();
+        if (controller.signal.aborted) return;
 
-        if (
-          !response.ok ||
-          result.success !== true ||
-          !Array.isArray(result.data)
-        ) {
-          throw new Error(
-            result.message || 'Unable to load booking availability.',
-          );
+        const byDate = new Map<string, DayAvailability>();
+
+        for (const monthData of results) {
+          for (const day of monthData) {
+            byDate.set(day.date, day);
+          }
         }
 
-        setAvailability(result.data as DayAvailability[]);
+        setAvailability(Array.from(byDate.values()));
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
 
@@ -139,13 +190,106 @@ export default function DateTimeStep({
     void loadAvailability();
 
     return () => controller.abort();
-  }, [year, month]);
-
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startingDay = new Date(year, month, 1).getDay();
+  }, [year, month, selectedDateKeys]);
 
   const availabilityForDate = (date: Date) =>
     availability.find((item) => item.date === formatDate(date));
+
+  const hasAvailabilityForAllSelectedDates =
+    selectedDates.length > 0 &&
+    selectedDates.every((date) => availabilityForDate(date) !== undefined);
+
+  // Every hour in a proposed interval must be free on every selected date.
+  // A booking from 09:00 to 12:00 occupies 09:00, 10:00 and 11:00.
+  const isRangeAvailable = (start: string, end: string) => {
+    if (
+      selectedDates.length === 0 ||
+      hourOf(end) <= hourOf(start) ||
+      !hasAvailabilityForAllSelectedDates
+    ) {
+      return false;
+    }
+
+    const startHour = hourOf(start);
+    const endHour = hourOf(end);
+
+    return selectedDates.every((date) => {
+      const day = availabilityForDate(date);
+
+      if (!day) return false;
+
+      for (let hour = startHour; hour < endHour; hour++) {
+        const time = `${String(hour).padStart(2, '0')}:00`;
+        const slot = day.slots.find((item) => item.time === time);
+
+        if (!slot || slot.status !== 'available') {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // A start time is selectable only when at least one later end time
+  // produces a continuous, available booking.
+  const availableStartTimes = START_TIMES.filter((start) =>
+    END_TIMES.some(
+      (end) =>
+        hourOf(end) > hourOf(start) &&
+        isRangeAvailable(start, end),
+    ),
+  );
+
+  const availableEndTimes = startTime
+    ? END_TIMES.filter(
+        (end) =>
+          hourOf(end) > hourOf(startTime) &&
+          isRangeAvailable(startTime, end),
+      )
+    : [];
+
+  // Clear selections that became invalid after a date or availability change.
+  useEffect(() => {
+    if (
+      loading ||
+      error ||
+      durationType !== 'custom' ||
+      !hasAvailabilityForAllSelectedDates
+    ) {
+      return;
+    }
+
+    if (
+      startTime &&
+      !availableStartTimes.includes(startTime)
+    ) {
+      onStartTimeChange('');
+      onEndTimeChange('');
+      return;
+    }
+
+    if (
+      endTime &&
+      (!startTime || !availableEndTimes.includes(endTime))
+    ) {
+      onEndTimeChange('');
+    }
+  }, [
+    loading,
+    error,
+    durationType,
+    hasAvailabilityForAllSelectedDates,
+    startTime,
+    endTime,
+    availableStartTimes.join(','),
+    availableEndTimes.join(','),
+    onStartTimeChange,
+    onEndTimeChange,
+  ]);
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startingDay = new Date(year, month, 1).getDay();
 
   const toggleDate = (date: Date) => {
     const exists = selectedDates.some((selected) =>
@@ -166,9 +310,7 @@ export default function DateTimeStep({
     selectedDates.some((selected) => isSameDay(selected, date));
 
   const changeMonth = (amount: number) => {
-    setCurrentMonth(
-      new Date(year, month + amount, 1),
-    );
+    setCurrentMonth(new Date(year, month + amount, 1));
   };
 
   const goToToday = () => {
@@ -176,14 +318,22 @@ export default function DateTimeStep({
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
   };
 
+  const customRangeIsValid =
+    durationType === 'custom' &&
+    !!startTime &&
+    !!endTime &&
+    !loading &&
+    !error &&
+    isRangeAvailable(startTime, endTime);
+
   const isComplete =
+    !loading &&
+    !error &&
     selectedDates.length > 0 &&
     durationType !== null &&
     (durationType === 'full-day' ||
       (durationType === 'half-day' && halfDay !== null) ||
-      (durationType === 'custom' &&
-        startTime !== null &&
-        endTime !== null));
+      customRangeIsValid);
 
   return (
     <div>
@@ -206,11 +356,9 @@ export default function DateTimeStep({
         {/* LEFT: CALENDAR */}
         <div>
           <div className="rounded-2xl border border-[#E4E9E4] bg-white p-5 sm:p-7">
-            {/* MONTH NAVIGATION */}
             <div className="mb-6 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs text-[#7A857F]">Select date(s)</p>
-
                 <h2 className="mt-1 font-semibold text-[#17201C]">
                   {monthLabel}
                 </h2>
@@ -245,7 +393,6 @@ export default function DateTimeStep({
               </div>
             </div>
 
-            {/* LOADING / ERROR */}
             {loading && (
               <p role="status" className="mb-4 text-center text-xs text-[#7A857F]">
                 Loading live availability...
@@ -269,25 +416,20 @@ export default function DateTimeStep({
               </div>
             )}
 
-            {/* WEEKDAYS */}
             <div className="grid grid-cols-7 gap-1 text-center">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(
-                (day, index) => (
-                  <div
-                    key={`${day}-${index}`}
-                    className="py-2 text-[11px] font-semibold text-[#8A958F]"
-                  >
-                    {day}
-                  </div>
-                ),
-              )}
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                <div
+                  key={`${day}-${index}`}
+                  className="py-2 text-[11px] font-semibold text-[#8A958F]"
+                >
+                  {day}
+                </div>
+              ))}
 
-              {/* EMPTY CELLS */}
               {Array.from({ length: startingDay }).map((_, index) => (
                 <div key={`empty-${index}`} />
               ))}
 
-              {/* MONTH DAYS */}
               {Array.from({ length: daysInMonth }, (_, index) => {
                 const date = new Date(year, month, index + 1);
                 const dateAvailability = availabilityForDate(date);
@@ -379,7 +521,6 @@ export default function DateTimeStep({
               })}
             </div>
 
-            {/* LEGEND */}
             <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-[#E4E9E4] pt-4">
               <div className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-[#10B981]" />
@@ -415,8 +556,9 @@ export default function DateTimeStep({
           {durationType === 'half-day' && (
             <div className="rounded-2xl border border-[#E4E9E4] bg-white p-5 sm:p-7">
               <p className="text-xs text-[#7A857F]">Half day session</p>
-
-              <h2 className="mt-1 font-semibold text-[#17201C]">Choose a session</h2>
+              <h2 className="mt-1 font-semibold text-[#17201C]">
+                Choose a session
+              </h2>
 
               <div className="mt-5 grid gap-3">
                 {HALF_DAY_SLOTS.map((slot) => {
@@ -436,7 +578,9 @@ export default function DateTimeStep({
                     >
                       <div>
                         <p className="text-sm font-semibold">{slot.name}</p>
-                        <p className="mt-1 text-xs text-[#7A857F]">{slot.time}</p>
+                        <p className="mt-1 text-xs text-[#7A857F]">
+                          {slot.time}
+                        </p>
                       </div>
 
                       {selected && <Check size={17} />}
@@ -451,21 +595,38 @@ export default function DateTimeStep({
           {durationType === 'custom' && (
             <div className="rounded-2xl border border-[#E4E9E4] bg-white p-5 sm:p-7">
               <p className="text-xs text-[#7A857F]">Custom hours</p>
+              <h2 className="mt-1 font-semibold text-[#17201C]">
+                Choose your hours
+              </h2>
 
-              <h2 className="mt-1 font-semibold text-[#17201C]">Choose your hours</h2>
+              <p className="mt-2 text-xs leading-5 text-[#66736C]">
+                Choose a continuous time range that is available on every selected date.
+                Each booking starts and ends on the hour.
+              </p>
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-2 block text-xs font-medium text-[#66736C]">Start time</span>
+                  <span className="mb-2 block text-xs font-medium text-[#66736C]">
+                    Start time
+                  </span>
 
                   <select
                     value={startTime ?? ''}
-                    onChange={(e) => onStartTimeChange(e.target.value)}
-                    className="w-full rounded-xl border border-[#E4E9E4] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#047857]"
+                    disabled={
+                      loading ||
+                      !!error ||
+                      selectedDates.length === 0 ||
+                      !hasAvailabilityForAllSelectedDates
+                    }
+                    onChange={(e) => {
+                      onStartTimeChange(e.target.value);
+                      onEndTimeChange('');
+                    }}
+                    className="w-full rounded-xl border border-[#E4E9E4] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#047857] disabled:cursor-not-allowed disabled:bg-[#F7F8F5]"
                   >
                     <option value="">Select start time</option>
 
-                    {BOOKING_HOURS.map((time) => (
+                    {availableStartTimes.map((time) => (
                       <option key={time} value={time}>
                         {time}
                       </option>
@@ -474,27 +635,57 @@ export default function DateTimeStep({
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-medium text-[#66736C]">End time</span>
+                  <span className="mb-2 block text-xs font-medium text-[#66736C]">
+                    End time
+                  </span>
 
                   <select
                     value={endTime ?? ''}
+                    disabled={
+                      loading ||
+                      !!error ||
+                      !startTime ||
+                      !hasAvailabilityForAllSelectedDates
+                    }
                     onChange={(e) => onEndTimeChange(e.target.value)}
-                    className="w-full rounded-xl border border-[#E4E9E4] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#047857]"
+                    className="w-full rounded-xl border border-[#E4E9E4] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#047857] disabled:cursor-not-allowed disabled:bg-[#F7F8F5]"
                   >
                     <option value="">Select end time</option>
 
-                    {BOOKING_HOURS.map((time) => (
-                      <option
-                        key={time}
-                        value={time}
-                        disabled={startTime !== null && time <= startTime}
-                      >
+                    {availableEndTimes.map((time) => (
+                      <option key={time} value={time}>
                         {time}
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
+
+              {loading && (
+                <p role="status" className="mt-4 text-xs text-[#7A857F]">
+                  Checking available hours...
+                </p>
+              )}
+
+              {!loading &&
+                !error &&
+                selectedDates.length > 0 &&
+                hasAvailabilityForAllSelectedDates &&
+                availableStartTimes.length === 0 && (
+                  <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+                    No continuous custom time range is available across all selected dates.
+                    Try selecting different dates.
+                  </p>
+                )}
+
+              {!loading &&
+                !error &&
+                selectedDates.length > 0 &&
+                !hasAvailabilityForAllSelectedDates && (
+                  <p className="mt-4 text-xs text-[#7A857F]">
+                    Availability for all selected dates is not loaded yet.
+                  </p>
+                )}
 
               {startTime && endTime && (
                 <div className="mt-5 rounded-xl bg-[#F7F8F5] px-4 py-3">
@@ -503,6 +694,16 @@ export default function DateTimeStep({
                   <p className="mt-1 text-sm font-semibold text-[#17201C]">
                     {startTime} — {endTime}
                   </p>
+
+                  <p className="mt-1 text-xs text-[#66736C]">
+                    {hourOf(endTime) - hourOf(startTime)} hour(s)
+                  </p>
+
+                  {!loading && !customRangeIsValid && (
+                    <p className="mt-2 text-xs text-red-600">
+                      This time range is no longer available. Choose another range.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -512,8 +713,9 @@ export default function DateTimeStep({
           <div className="rounded-2xl border border-[#E4E9E4] bg-white p-5 sm:p-7">
             <div className="mb-5">
               <p className="text-xs text-[#7A857F]">Booking duration</p>
-
-              <h2 className="mt-1 font-semibold text-[#17201C]">How long do you need the hall?</h2>
+              <h2 className="mt-1 font-semibold text-[#17201C]">
+                How long do you need the hall?
+              </h2>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
@@ -534,13 +736,16 @@ export default function DateTimeStep({
                   >
                     <div className="flex items-start justify-between">
                       <Clock3 size={18} />
-
                       {selected && <Check size={16} />}
                     </div>
 
-                    <p className="mt-4 text-sm font-semibold">{duration.name}</p>
+                    <p className="mt-4 text-sm font-semibold">
+                      {duration.name}
+                    </p>
 
-                    <p className="mt-1 text-xs leading-5 text-[#7A857F]">{duration.description}</p>
+                    <p className="mt-1 text-xs leading-5 text-[#7A857F]">
+                      {duration.description}
+                    </p>
                   </button>
                 );
               })}
