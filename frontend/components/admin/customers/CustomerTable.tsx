@@ -78,7 +78,14 @@ export default function CustomerTable({ customers, onSelectCustomer }: Props) {
                       <p className="text-sm font-semibold text-[#17201C]">{customer.name}</p>
 
                       <p className="mt-0.5 text-xs text-[#8A958F]">
-                        Customer since {customer.createdAt}
+                        Customer since {new Date(customer.createdAt).toLocaleString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false,
+                        })}
                       </p>
                     </div>
                   </div>
